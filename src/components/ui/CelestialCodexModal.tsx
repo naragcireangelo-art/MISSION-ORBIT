@@ -15,6 +15,7 @@ import { uiAudio } from '../../engine/uiAudio';
 import { useGameStore } from '../../store/useGameStore';
 import { IconCheck, IconClose, IconCodex, IconCrosshair } from './icons';
 import { BodyPortrait } from './planet/BodyPortrait';
+import { isSphereArt } from './planet/planetTextures';
 
 type GroupFilter = CodexGroup | 'all';
 
@@ -208,7 +209,13 @@ function CodexDialog() {
                     size={selected.art === 'saturn' ? 190 : 230}
                     fps={30}
                     label={`Portrait of ${selected.title}`}
+                    interactive
                   />
+                  {isSphereArt(selected.art) && (
+                    <p className="mo-codex__drag-hint" aria-hidden="true">
+                      Drag to rotate · double-click to reset
+                    </p>
+                  )}
                 </div>
                 <div className="mo-codex__info">
                   <p className="mo-eyebrow">{selected.kind}</p>

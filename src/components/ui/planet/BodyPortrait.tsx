@@ -19,9 +19,11 @@ export interface BodyPortraitProps {
   decorator?: SphereDecorator;
   className?: string;
   label?: string;
+  /** Let the player drag to rotate (planets and moons only). */
+  interactive?: boolean;
 }
 
-export function BodyPortrait({ art, size, spin, fps, glow, decorator, className, label }: BodyPortraitProps) {
+export function BodyPortrait({ art, size, spin, fps, glow, decorator, className, label, interactive }: BodyPortraitProps) {
   if (isSphereArt(art)) {
     return (
       <PlanetSphere
@@ -33,6 +35,7 @@ export function BodyPortrait({ art, size, spin, fps, glow, decorator, className,
         decorator={decorator}
         className={className}
         label={label}
+        interactive={interactive}
       />
     );
   }

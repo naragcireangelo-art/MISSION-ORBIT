@@ -372,6 +372,33 @@
   flex: none;
   display: inline-block;
 }
+.mo-sphere--interactive {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 50%;
+}
+.mo-sphere--interactive.is-dragging {
+  cursor: grabbing;
+}
+.mo-sphere--interactive:focus-visible {
+  outline: 2px solid rgba(111, 160, 255, 0.8);
+  outline-offset: 6px;
+}
+.mo-codex__drag-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  pointer-events: none;
+}
 .mo-sphere__glow {
   position: absolute;
   inset: 0;

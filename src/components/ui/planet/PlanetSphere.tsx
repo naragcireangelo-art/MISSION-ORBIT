@@ -25,6 +25,12 @@ import {
   type SphereArtId,
 } from './planetTextures';
 import { useReducedMotion } from '../hooks';
+import {
+  baseOrientation,
+  orthonormalize,
+  ringPose,
+  rotateOrientation,
+} from './sphereOrientation';
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -67,6 +73,8 @@ export interface PlanetSphereProps {
   className?: string;
   /** Accessible description. Omit for purely decorative spheres. */
   label?: string;
+  /** Lets the player drag (or use the arrow keys) to turn the planet in any direction. */
+  interactive?: boolean;
 }
 
 // ── Sphere geometry (computed once per size / tilt) ──────────────────────────
@@ -97,9 +105,16 @@ interface Geometry {
   rim: Float32Array;
   /** Pixel coverage (antialiasing at the limb), 0..1. */
   cover: Float32Array;
+  /** View-space position of each pixel (interactive spheres only). */
+  vx?: Float32Array;
+  vy?: Float32Array;
+  vz?: Float32Array;
+  /** Longitude and v recomputed from the live orientation (interactive spheres only). */
+  lonLive?: Float32Array;
+  vLive?: Float32Array;
 }
 
-function buildGeometry(size: number, tilt: number, elevation: number): Geometry {
+function buildGeometry(size: number, tilt: number, elevation: number, withView = false): Geometry {
   const half = size / 2;
   const ct = Math.cos(tilt);
   const st = Math.sin(tilt);
@@ -113,6 +128,9 @@ function buildGeometry(size: number, tilt: number, elevation: number): Geometry 
   const shade: number[] = [];
   const rim: number[] = [];
   const cover: number[] = [];
+  const vxs: number[] = [];
+  const vys: number[] = [];
+  const vzs: number[] = [];
 
   for (let py = 0; py < size; py++) {
     const y = -((py + 0.5) - half) / half;
@@ -136,6 +154,11 @@ function buildGeometry(size: number, tilt: number, elevation: number): Geometry 
       shade.push(smoothstep(-0.1, 0.6, dot));
       rim.push(Math.pow(1 - z, 2.6));
       cover.push(Math.max(0, Math.min(1, (1 - dist) * half + 0.5)));
+      if (withView) {
+        vxs.push(x);
+        vys.push(y);
+        vzs.push(z);
+      }
     }
   }
   return {
@@ -147,7 +170,32 @@ function buildGeometry(size: number, tilt: number, elevation: number): Geometry 
     shade: Float32Array.from(shade),
     rim: Float32Array.from(rim),
     cover: Float32Array.from(cover),
+    ...(withView
+      ? {
+          vx: Float32Array.from(vxs),
+          vy: Float32Array.from(vys),
+          vz: Float32Array.from(vzs),
+          lonLive: new Float32Array(offset.length),
+          vLive: new Float32Array(offset.length),
+        }
+      : {}),
   };
+}
+
+/** Recomputes each pixel's longitude and v from the planet's current orientation. */
+function applyOrientation(geo: Geometry, m: Float64Array): void {
+  const { vx, vy, vz, lonLive, vLive } = geo;
+  if (!vx || !vy || !vz || !lonLive || !vLive) return;
+  for (let i = 0; i < geo.count; i++) {
+    const x = vx[i];
+    const y = vy[i];
+    const z = vz[i];
+    const px = m[0] * x + m[1] * y + m[2] * z;
+    const py = m[3] * x + m[4] * y + m[5] * z;
+    const pz = m[6] * x + m[7] * y + m[8] * z;
+    lonLive[i] = Math.atan2(px, pz);
+    vLive[i] = 0.5 - Math.asin(Math.max(-1, Math.min(1, py))) / Math.PI;
+  }
 }
 
 // ── Per-frame sphere shading ─────────────────────────────────────────────────
@@ -160,6 +208,8 @@ function shadeSphere(
   rotation: number,
   cloudRotation: number,
 ): void {
+  const lonA = geo.lonLive ?? geo.lon;
+  const vA = geo.vLive ?? geo.v;
   const d = out.data;
   d.fill(0);
   const W = tex.width;
@@ -174,14 +224,14 @@ function shadeSphere(
   const rimK = style.rim;
 
   for (let i = 0; i < geo.count; i++) {
-    let u = (geo.lon[i] + rotation) * INV_TWO_PI + 0.5;
+    let u = (lonA[i] + rotation) * INV_TWO_PI + 0.5;
     u -= Math.floor(u);
     const fx = u * W - 0.5;
     const x0f = Math.floor(fx);
     const tx = fx - x0f;
     const xa = (x0f + W) % W;
     const xb = (xa + 1) % W;
-    const fy = geo.v[i] * (H - 1);
+    const fy = vA[i] * (H - 1);
     const y0 = fy | 0;
     const y1 = y0 + 1 < H ? y0 + 1 : H - 1;
     const ty = fy - y0;
@@ -203,10 +253,10 @@ function shadeSphere(
 
     // Cloud layer (Earth), spun at its own rate.
     if (clouds) {
-      let cu = (geo.lon[i] + cloudRotation) * INV_TWO_PI + 0.5;
+      let cu = (lonA[i] + cloudRotation) * INV_TWO_PI + 0.5;
       cu -= Math.floor(cu);
       const cx = Math.min(CW - 1, (cu * CW) | 0);
-      const cy = Math.min(CH - 1, (geo.v[i] * CH) | 0);
+      const cy = Math.min(CH - 1, (vA[i] * CH) | 0);
       const c = (clouds[cy * CW + cx] / 255) * 0.88;
       r += (246 - r) * c;
       g += (248 - g) * c;
@@ -221,7 +271,7 @@ function shadeSphere(
     // City lights glow on the night side.
     if (lights) {
       const lx = Math.min(W - 1, (u * W) | 0);
-      const ly = Math.min(H - 1, Math.round(geo.v[i] * (H - 1)));
+      const ly = Math.min(H - 1, Math.round(vA[i] * (H - 1)));
       const l = lights[ly * W + lx] / 255;
       if (l > 0) {
         const night = 1 - smoothstep(0, 0.22, shade);
@@ -265,6 +315,7 @@ function ringSample(r: number): { a: number; c: [number, number, number] } {
 }
 
 function renderRingHalf(
+  canvas: HTMLCanvasElement | null,
   box: number,
   dpr: number,
   cx: number,
@@ -274,11 +325,16 @@ function renderRingHalf(
   ratio: number,
   half: 'back' | 'front',
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(box * dpr);
-  canvas.height = Math.round(box * dpr);
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.width = Math.round(box * dpr);
+    canvas.height = Math.round(box * dpr);
+  }
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
   ctx.scale(dpr, dpr);
   ctx.translate(cx, cy);
   ctx.rotate(tilt);
@@ -297,6 +353,7 @@ function renderRingHalf(
     ctx.arc(0, 0, r * R, 0, Math.PI * 2);
     ctx.stroke();
   }
+  ctx.restore();
   return canvas;
 }
 
@@ -313,6 +370,7 @@ export function PlanetSphere({
   startAngle = 0,
   className,
   label,
+  interactive = false,
 }: PlanetSphereProps) {
   const style = SPHERE_STYLES[body];
   const boxScale = pad ?? (style.rings ? 2.6 : 1);
@@ -357,10 +415,40 @@ export function PlanetSphere({
     const startedAt = performance.now();
     let last = 0;
 
+    // Interactive state: a free orientation, plus the spin that carries on around the pole.
+    const orient = baseOrientation(style.tilt, style.elevation);
+    let orientDirty = true;
+    let turns = 0;
+    let autoAngle = startAngle;
+    let dragging = false;
+    let resumeAt = 0;
+    let velYaw = 0; // rad/s while coasting
+    let velPitch = 0;
+    let lastFrame = 0;
+    let immediate = false;
+    let oneShot = 0;
+
+    const turn = (yaw: number, pitch: number): void => {
+      rotateOrientation(orient, yaw, pitch);
+      if (++turns % 30 === 0) orthonormalize(orient);
+      orientDirty = true;
+    };
+
     const draw = (now: number): void => {
       if (!geo || !tex) return;
       const t = (now - startedAt) / 1000;
-      const rotation = startAngle + t * speed;
+      const rotation = interactive ? autoAngle : startAngle + t * speed;
+      if (interactive && orientDirty) {
+        applyOrientation(geo, orient);
+        if (style.rings) {
+          const pose = ringPose(orient);
+          const backHalf = pose.flip ? 'front' : 'back';
+          const frontHalf = pose.flip ? 'back' : 'front';
+          ringBack = renderRingHalf(ringBack, box, dpr, cx, cy, R, pose.angle, pose.ratio, backHalf);
+          ringFront = renderRingHalf(ringFront, box, dpr, cx, cy, R, pose.angle, pose.ratio, frontHalf);
+        }
+        orientDirty = false;
+      }
       shadeSphere(image, geo, tex, style, rotation, rotation * 1.18 + 0.7);
       sctx.putImageData(image, 0, 0);
 
@@ -385,13 +473,44 @@ export function PlanetSphere({
       }
     };
 
+    /** Advances inertia and the resumed auto-spin by the time since the last frame. */
+    const step = (now: number): void => {
+      const dt = lastFrame ? Math.min(0.1, (now - lastFrame) / 1000) : 0;
+      lastFrame = now;
+      if (dt <= 0 || dragging) return;
+      if (velYaw !== 0 || velPitch !== 0) {
+        turn(velYaw * dt, velPitch * dt);
+        const decay = Math.exp(-dt * 3.2);
+        velYaw *= decay;
+        velPitch *= decay;
+        if (Math.abs(velYaw) < 0.02 && Math.abs(velPitch) < 0.02) velYaw = velPitch = 0;
+      }
+      const ease = Math.min(1, Math.max(0, (now - resumeAt) / 1500));
+      autoAngle += speed * ease * dt;
+    };
+
     const frame = (now: number): void => {
       if (cancelled) return;
       raf = requestAnimationFrame(frame);
       if (!visible || document.hidden) return;
-      if (now - last < 1000 / fps) return;
+      if (!immediate && now - last < 1000 / fps) return;
+      immediate = false;
       last = now;
+      if (interactive) step(now);
       draw(now);
+    };
+
+    /** Reduced-motion spheres have no loop, so a drag paints itself once per frame. */
+    const paintOnce = (): void => {
+      if (!reduced) {
+        immediate = true;
+        return;
+      }
+      if (oneShot) return;
+      oneShot = requestAnimationFrame(() => {
+        oneShot = 0;
+        draw(performance.now());
+      });
     };
 
     // Build the texture a moment after mount so the first paint is never blocked.
@@ -402,11 +521,11 @@ export function PlanetSphere({
       } catch {
         return;
       }
-      geo = buildGeometry(S, style.tilt, style.elevation);
-      if (style.rings) {
+      geo = buildGeometry(S, style.tilt, style.elevation, interactive);
+      if (style.rings && !interactive) {
         const ratio = Math.abs(Math.sin(style.elevation));
-        ringBack = renderRingHalf(box, dpr, cx, cy, R, style.tilt, ratio, 'back');
-        ringFront = renderRingHalf(box, dpr, cx, cy, R, style.tilt, ratio, 'front');
+        ringBack = renderRingHalf(null, box, dpr, cx, cy, R, style.tilt, ratio, 'back');
+        ringFront = renderRingHalf(null, box, dpr, cx, cy, R, style.tilt, ratio, 'front');
       }
       draw(performance.now());
       wrap.setAttribute('data-ready', 'true');
@@ -421,13 +540,102 @@ export function PlanetSphere({
         : null;
     observer?.observe(wrap);
 
+    // ── Drag, inertia and keyboard ──────────────────────────────────────────
+    let pointerId = -1;
+    let lastX = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let vx = 0; // px/ms, smoothed
+    let vy = 0;
+
+    const resetView = (): void => {
+      orient.set(baseOrientation(style.tilt, style.elevation));
+      velYaw = velPitch = 0;
+      orientDirty = true;
+    };
+    const onDown = (e: PointerEvent): void => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true;
+      pointerId = e.pointerId;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = e.timeStamp;
+      vx = vy = 0;
+      velYaw = velPitch = 0;
+      wrap.setPointerCapture(e.pointerId);
+      wrap.classList.add('is-dragging');
+      e.preventDefault();
+    };
+    const onMove = (e: PointerEvent): void => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      const dtMs = Math.max(1, e.timeStamp - lastT);
+      vx = vx * 0.5 + (dx / dtMs) * 0.5;
+      vy = vy * 0.5 + (dy / dtMs) * 0.5;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = e.timeStamp;
+      turn(dx / R, dy / R);
+      paintOnce();
+    };
+    const onUp = (e: PointerEvent): void => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+      wrap.classList.remove('is-dragging');
+      if (wrap.hasPointerCapture(e.pointerId)) wrap.releasePointerCapture(e.pointerId);
+      const fresh = e.timeStamp - lastT < 80;
+      const limit = 12;
+      if (!reduced && fresh) {
+        velYaw = Math.max(-limit, Math.min(limit, (vx * 1000) / R));
+        velPitch = Math.max(-limit, Math.min(limit, (vy * 1000) / R));
+      }
+      resumeAt = performance.now() + 1200;
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      const nudge = 0.14;
+      if (e.key === 'ArrowLeft') turn(-nudge, 0);
+      else if (e.key === 'ArrowRight') turn(nudge, 0);
+      else if (e.key === 'ArrowUp') turn(0, -nudge);
+      else if (e.key === 'ArrowDown') turn(0, nudge);
+      else if (e.key === 'Home') resetView();
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+      resumeAt = performance.now() + 1200;
+      paintOnce();
+    };
+    const onDouble = (): void => {
+      resetView();
+      paintOnce();
+    };
+
+    if (interactive) {
+      wrap.addEventListener('pointerdown', onDown);
+      wrap.addEventListener('pointermove', onMove);
+      wrap.addEventListener('pointerup', onUp);
+      wrap.addEventListener('pointercancel', onUp);
+      wrap.addEventListener('keydown', onKey);
+      wrap.addEventListener('dblclick', onDouble);
+    }
+
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(oneShot);
       observer?.disconnect();
+      if (interactive) {
+        wrap.removeEventListener('pointerdown', onDown);
+        wrap.removeEventListener('pointermove', onMove);
+        wrap.removeEventListener('pointerup', onUp);
+        wrap.removeEventListener('pointercancel', onUp);
+        wrap.removeEventListener('keydown', onKey);
+        wrap.removeEventListener('dblclick', onDouble);
+        wrap.classList.remove('is-dragging');
+      }
     };
-  }, [body, size, box, spin, fps, startAngle, reduced, style]);
+  }, [body, size, box, spin, fps, startAngle, reduced, style, interactive]);
 
   const glowShadow = glow
     ? `0 0 ${Math.round(size * 0.1)}px ${Math.round(size * 0.015)}px rgba(${style.glow},0.34), 0 0 ${Math.round(size * 0.38)}px rgba(${style.glow},0.16)`
@@ -436,11 +644,12 @@ export function PlanetSphere({
   return (
     <div
       ref={wrapRef}
-      className={`mo-sphere${className ? ` ${className}` : ''}`}
+      className={`mo-sphere${interactive ? ' mo-sphere--interactive' : ''}${className ? ` ${className}` : ''}`}
       style={{ width: size, height: size }}
       role={label ? 'img' : undefined}
-      aria-label={label}
+      aria-label={label ? (interactive ? `${label}. Drag or use the arrow keys to rotate.` : label) : undefined}
       aria-hidden={label ? undefined : true}
+      tabIndex={interactive ? 0 : undefined}
     >
       {glow && <span className="mo-sphere__glow" style={{ boxShadow: glowShadow }} />}
       <canvas
