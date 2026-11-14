@@ -57,7 +57,8 @@ export function VectorSatellitePreview({ parts, name, beam = true, className }: 
       // Centre the whole drawing (flame to nose) rather than just the chassis.
       const cx = width / 2 - ((b.left + b.right) / 2) * scale;
       const bob = reduced ? 0 : Math.sin(t * 1.3) * 4;
-      const cy = height * 0.46 + bob;
+      // Centre the whole drawing (antenna to laser), not just the body, so a tall antenna doesn't push it low.
+      const cy = height * 0.46 - ((b.top + b.bottom) / 2) * scale + bob;
 
       drawSatellite(ctx, p, { x: cx, y: cy, scale, t, thrust: reduced ? 0.5 : 0.55 + 0.1 * Math.sin(t * 2), beam, rotation: reduced ? 0 : Math.sin(t * 0.9) * 0.025 });
 

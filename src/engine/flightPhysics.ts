@@ -21,12 +21,11 @@ export interface ArenaBounds {
 /** Where the ship may roam. The drawn wings and antenna must stay on screen, not just the chassis. */
 export function arenaBounds(aspect: number, parts: SatelliteParts): ArenaBounds {
   const b = satelliteBounds(parts, GAMEPLAY.SHIP_UNIT);
-  const margin = Math.abs(b.top) + 0.012;
   return {
     xMin: Math.max(aspect * GAMEPLAY.SHIP_X_MIN, Math.abs(b.left) + 0.02),
     xMax: aspect * GAMEPLAY.SHIP_X_MAX,
-    yMin: margin,
-    yMax: 1 - margin,
+    yMin: Math.abs(b.top) + 0.012,
+    yMax: 1 - (b.bottom + 0.012),
   };
 }
 

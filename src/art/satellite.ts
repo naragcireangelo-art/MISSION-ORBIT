@@ -23,6 +23,7 @@ import {
   FACETED_LASER_ART as LASER_ART,
   FACETED_THRUSTER_ART as THRUSTER_ART,
 } from './faceted-paths';
+import { shapesExtent } from './extents';
 import { BODY_ANCHORS, PALETTE, type Anchor, type ShapeDef } from './paths';
 
 export interface DrawSatelliteOptions {
@@ -196,15 +197,36 @@ export function satelliteHitbox(parts: SatelliteParts, scale = 1): { halfW: numb
   return { halfW: a.halfW * scale, halfH: a.halfH * scale };
 }
 
-/** Rough full extent of the drawing (wings, antenna and flame included), for layout. */
+const extentCache = new Map<string, ReturnType<typeof shapesExtent>>();
+
+function cachedExtent(key: string, shapes: readonly ShapeDef[]): ReturnType<typeof shapesExtent> {
+  let e = extentCache.get(key);
+  if (!e) {
+    e = shapesExtent(shapes);
+    extentCache.set(key, e);
+  }
+  return e;
+}
+
+/**
+ * Full extent of the drawing, relative to the body centre and scaled: wings, antenna, laser, thruster
+ * and flame included. It is measured from the art itself, so a taller antenna or a wider wing is
+ * accounted for automatically. Used for the arena margins and for framing the Assembly preview.
+ */
 export function satelliteBounds(parts: SatelliteParts, scale = 1): { left: number; right: number; top: number; bottom: number } {
   const ids = artIds(parts);
   const a = BODY_ANCHORS[ids.body];
-  const flameLen = Math.max(...THRUSTER_ART[ids.thruster].flames.map((f) => Math.abs(f.x) + f.len));
+  const body = cachedExtent(ids.body, BODY_ART[ids.body]);
+  const antenna = cachedExtent(ids.antenna, ANTENNA_ART[ids.antenna]);
+  const laser = cachedExtent(ids.laser, LASER_ART[ids.laser].shapes);
+  const thrusterArt = THRUSTER_ART[ids.thruster];
+  const thruster = cachedExtent(ids.thruster, thrusterArt.shapes);
+  const flameLeft = Math.min(...thrusterArt.flames.map((f) => a.rear.x + f.x - f.len));
+
   return {
-    left: -(Math.abs(a.rear.x) + flameLen) * scale,
-    right: (a.halfW + 6) * scale,
-    top: -(a.halfH + 38) * scale,
-    bottom: (a.halfH + 38) * scale,
+    left: Math.min(body.minX, a.rear.x + thruster.minX, flameLeft) * scale,
+    right: (Math.max(body.maxX, a.antenna.x + antenna.maxX, a.laser.x + laser.maxX) + 4) * scale,
+    top: Math.min(body.minY, a.antenna.y + antenna.minY, a.laser.y + laser.minY, a.rear.y + thruster.minY) * scale,
+    bottom: Math.max(body.maxY, a.antenna.y + antenna.maxY, a.laser.y + laser.maxY, a.rear.y + thruster.maxY) * scale,
   };
 }
