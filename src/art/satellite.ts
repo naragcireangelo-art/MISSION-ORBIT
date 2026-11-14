@@ -18,15 +18,12 @@ import {
   type SatellitePartIds,
 } from '../data/parts';
 import {
-  ANTENNA_ART,
-  BODY_ANCHORS,
-  BODY_ART,
-  LASER_ART,
-  PALETTE,
-  THRUSTER_ART,
-  type Anchor,
-  type ShapeDef,
-} from './paths';
+  FACETED_ANTENNA_ART as ANTENNA_ART,
+  FACETED_BODY_ART as BODY_ART,
+  FACETED_LASER_ART as LASER_ART,
+  FACETED_THRUSTER_ART as THRUSTER_ART,
+} from './faceted-paths';
+import { BODY_ANCHORS, PALETTE, type Anchor, type ShapeDef } from './paths';
 
 export interface DrawSatelliteOptions {
   /** Centre of the body. Defaults to (0, 0). */
