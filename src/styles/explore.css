@@ -1,0 +1,17 @@
+/* ExploreScreen stage: starfield canvas, target planet, game canvas, then the HUD (z-index 5). */
+
+.mo-explore { padding: 0; gap: 0; overflow: hidden; }
+.mo-explore__stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #02050d; }
+.mo-explore__back,
+.mo-explore__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.mo-explore__back { z-index: 0; }
+.mo-explore__canvas { z-index: 2; }
+.mo-explore__planet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}

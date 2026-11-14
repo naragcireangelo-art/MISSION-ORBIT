@@ -4,7 +4,7 @@
  *   Splash → Archive (all levels) → Objectives (the chosen level) → Play → Explore (gameplay)
  *
  * Splash runs on its own; the other screens sit inside the slim Mission Control frame.
- * Explore belongs to a teammate. Until it lands, a small placeholder keeps the flow clickable.
+ * Explore is the real flight (ExploreScreen). `?hud-preview` swaps in the HUD test stage instead.
  * Dev only: open with `?hud-preview` to replace the Explore placeholder with a HUD test stage.
  */
 
@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { FlightHudPreview } from './components/flight/FlightHudPreview';
 import { MissionControlFrame } from './components/ui/MissionControlFrame';
 import { AssemblyScreen } from './screens/AssemblyScreen';
+import { ExploreScreen } from './screens/ExploreScreen';
 import { MissionArchiveScreen } from './screens/MissionArchiveScreen';
 import { MissionCompleteScreen } from './screens/MissionCompleteScreen';
 import { ObjectivesScreen } from './screens/ObjectivesScreen';
@@ -58,7 +59,7 @@ export default function App() {
       content = <ObjectivesScreen />;
       break;
     case 'explore':
-      content = HUD_PREVIEW ? <FlightHudPreview /> : <Placeholder screen={screen} />;
+      content = HUD_PREVIEW ? <FlightHudPreview /> : <ExploreScreen />;
       break;
     case 'complete':
       content = <MissionCompleteScreen />;
