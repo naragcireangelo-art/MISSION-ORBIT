@@ -91,7 +91,7 @@ function flyMission(sim: FlightSim, maxSeconds = 600): RunResult {
   let phase: FlightInput['phase'] = 'APPROACH';
   let phaseTimer = 0;
   let steer = 0;
-  for (let i = 0; i < (maxSeconds / DT) | 0; i++) {
+  for (let i = 0; i < Math.floor(maxSeconds / DT); i++) {
     const scale = phase === 'SCAN' ? 0.25 : 1;
     if (i % 3 === 0) steer = botSteer(sim); // a human reacts every ~50 ms, not every frame
     const move = { x: 0, y: phase === 'SCAN' ? 0 : steer };
@@ -129,7 +129,6 @@ describe('fairness', { timeout: 120_000 }, () => {
     it(`the slowest build can finish a tier ${tier} mission`, () => {
       const results: RunResult[] = [];
       for (let seed = 1; seed <= 4; seed++) results.push(flyMission(makeSim(SLOWEST, tier, seed)));
-      if (process.env.SIM_LOG) console.log(`tier ${tier}`, JSON.stringify(results));
       for (const r of results) {
         expect(r.status).toBe('complete');
         expect(r.scanned).toBe(MISSIONS[5].targetIds.length);
