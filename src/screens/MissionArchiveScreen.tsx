@@ -11,16 +11,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { EraTabs, eraPanelId, eraTabId, type EraTabCount } from '../components/archive/EraTabs';
 import { MissionDossierCard, type DossierStatus } from '../components/archive/MissionDossierCard';
 import {
-  ERAS,
+  ERA_TABS as ERAS,
   MISSIONS,
+  getMissionByLevel,
   getMissionsByEra,
-  getUnlockRequirement,
   isMissionUnlocked,
-  type EraId,
-  type Mission,
+  type EraTab as EraId,
+  type MissionData as Mission,
 } from '../data/missions';
 import { uiAudio } from '../engine/uiAudio';
 import { useGameStore } from '../store/useGameStore';
+
+/** The mission that must be finished before this one (none for level 1). */
+const getUnlockRequirement = (m: Mission): Mission | undefined =>
+  m.levelNumber > 1 ? getMissionByLevel(m.levelNumber - 1) : undefined;
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
@@ -31,12 +35,17 @@ export function MissionArchiveScreen() {
   const selectMission = useGameStore((s) => s.selectMission);
   const setScreen = useGameStore((s) => s.setScreen);
 
+  // isMissionUnlocked wants a { [missionId]: { completed } } map.
+  const progress = useMemo(
+    () => Object.fromEntries(completedIds.map((id) => [id, { completed: true }])),
+    [completedIds],
+  );
   const statusOf = (m: Mission): DossierStatus =>
-    completedIds.includes(m.id) ? 'complete' : isMissionUnlocked(m, completedIds) ? 'ready' : 'locked';
+    completedIds.includes(m.id) ? 'complete' : isMissionUnlocked(m, progress) ? 'ready' : 'locked';
 
   const [activeEra, setActiveEra] = useState<EraId>(() => {
-    const next = MISSIONS.find((m) => !completedIds.includes(m.id) && isMissionUnlocked(m, completedIds));
-    return next ? next.era : ERAS[0].id;
+    const next = MISSIONS.find((m) => !completedIds.includes(m.id) && isMissionUnlocked(m, progress));
+    return next ? next.eraTab : ERAS[0].id;
   });
   const [launchingId, setLaunchingId] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -87,7 +96,7 @@ export function MissionArchiveScreen() {
     if (launchingId) return;
     selectMission(mission.id);
     setLaunchingId(mission.id);
-    timer.current = window.setTimeout(() => setScreen('objectives'), 560);
+    timer.current = window.setTimeout(() => setScreen('assembly'), 560);
   };
 
   return (
@@ -97,7 +106,7 @@ export function MissionArchiveScreen() {
           <h1 id="mo-archive-title" className="mo-title">
             Mission Archive
           </h1>
-          <p className="mo-lede">Nine real NASA missions. Pick a level to see its objectives.</p>
+          <p className="mo-lede">Nine real NASA missions. Pick a level to build your satellite.</p>
         </div>
       </header>
 
@@ -111,7 +120,7 @@ export function MissionArchiveScreen() {
           tabIndex={-1}
         >
           <div className="mo-folder__head">
-            <h2 className="mo-folder__title">{era.folderTitle}</h2>
+            <h2 className="mo-folder__title">{era.label}</h2>
           </div>
           <div className="mo-folder__grid" key={era.id}>
             {missions.map((m, i) => (

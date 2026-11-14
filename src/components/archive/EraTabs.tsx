@@ -7,7 +7,7 @@
 
 import { useRef } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import type { Era, EraId } from '../../data/missions';
+import type { EraTab as EraId, EraTabInfo } from '../../data/missions';
 import { IconCheck } from '../ui/icons';
 
 export interface EraTabCount {
@@ -16,7 +16,7 @@ export interface EraTabCount {
 }
 
 export interface EraTabsProps {
-  eras: Era[];
+  eras: readonly EraTabInfo[];
   active: EraId;
   counts: Record<EraId, EraTabCount>;
   onChange: (id: EraId) => void;
@@ -80,7 +80,7 @@ export function EraTabs({ eras, active, counts, onChange }: EraTabsProps) {
           >
             <span className="mo-eratab__index">{`0${index + 1}`}</span>
             <span className="mo-eratab__text">
-              <span className="mo-eratab__label">{era.tabLabel}</span>
+              <span className="mo-eratab__label">{era.id.replace('-', ' – ')}</span>
               <span className="mo-eratab__count">
                 {finished ? (
                   <>

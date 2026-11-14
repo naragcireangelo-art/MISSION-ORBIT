@@ -6,7 +6,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Mission } from '../../data/missions';
+import { getBody } from '../../data/celestialBodies';
+import { getCodexEntry } from '../../data/codexEntries';
+import { formatLaunchDate, type MissionData as Mission } from '../../data/missions';
 import { uiAudio } from '../../engine/uiAudio';
 import { IconArrowRight, IconCheck, IconLock, IconStar } from '../ui/icons';
 import { BodyPortrait } from '../ui/planet/BodyPortrait';
@@ -55,8 +57,9 @@ export function MissionDossierCard({
     [],
   );
 
+  const art = getCodexEntry(getBody(mission.briefingTarget.bodyId)?.scanName)?.art;
   const locked = status === 'locked';
-  const hint = locked && requirement ? `Complete ${requirement.id} (${requirement.spacecraft}) first` : '';
+  const hint = locked && requirement ? `Complete ${requirement.code} (${requirement.spacecraft}) first` : '';
 
   const handleClick = (): void => {
     if (locked) {
@@ -86,7 +89,7 @@ export function MissionDossierCard({
       className={cls}
       style={{ '--mo-i': index } as CSSProperties}
       aria-disabled={locked}
-      aria-label={`${mission.id}, ${mission.title}, ${mission.spacecraft}. Launched ${mission.launch.fullDate}. ${
+      aria-label={`${mission.code}, ${mission.folderTitle}, ${mission.spacecraft}. Launched ${formatLaunchDate(mission.launchDateISO)}. ${
         locked ? `Locked. ${hint}.` : status === 'complete' ? `Complete, ${stars} of 3 stars.` : 'Ready.'
       }`}
       onClick={handleClick}
@@ -100,7 +103,7 @@ export function MissionDossierCard({
       <span className="mo-corner mo-corner--br" />
 
       <span className="mo-dossier__head">
-        <span className="mo-tag mo-tag--mono">{mission.id}</span>
+        <span className="mo-tag mo-tag--mono">{mission.code}</span>
         {status !== 'ready' && (
           <span className={`mo-statuschip is-${status}`}>
             {status === 'locked' && <IconLock size={12} />}
@@ -112,19 +115,19 @@ export function MissionDossierCard({
 
       <span className="mo-dossier__body">
         <span className="mo-dossier__art" aria-hidden="true">
-          <BodyPortrait art={mission.featuredBody} size={mission.featuredBody === 'saturn' ? 58 : 88} fps={20} spin={status === 'locked' ? 0.35 : 1} />
+          {art ? <BodyPortrait art={art} size={art === 'saturn' ? 58 : 88} fps={20} spin={status === 'locked' ? 0.35 : 1} /> : null}
         </span>
         <span className="mo-dossier__titles">
-          <span className="mo-dossier__title">{mission.title}</span>
+          <span className="mo-dossier__title">{mission.folderTitle}</span>
           <span className="mo-dossier__craft">{mission.spacecraft.toUpperCase()}</span>
         </span>
-        <LaunchDateBadge launch={mission.launch} compact />
+        <LaunchDateBadge mission={mission} compact />
       </span>
 
-      <span className="mo-dossier__tagline">{mission.tagline}</span>
+      <span className="mo-dossier__tagline">{mission.regionTag}</span>
 
       <span className="mo-dossier__objectives">
-        {mission.targets.length} {mission.targets.length === 1 ? 'objective' : 'objectives'}
+        {mission.targetIds.length} {mission.targetIds.length === 1 ? 'objective' : 'objectives'}
       </span>
 
       <span className="mo-dossier__foot">

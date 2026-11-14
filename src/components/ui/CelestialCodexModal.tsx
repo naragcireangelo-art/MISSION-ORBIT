@@ -47,7 +47,7 @@ function CodexDialog() {
   const appearsIn = useMemo(
     () =>
       selected
-        ? MISSIONS.filter((m) => m.targets.some((t) => t.toLowerCase() === selected.scanName.toLowerCase()))
+        ? MISSIONS.filter((m) => m.targetIds.some((t) => t.toLowerCase() === selected.scanName.toLowerCase()))
         : [],
     [selected],
   );

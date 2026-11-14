@@ -19,7 +19,9 @@
  */
 
 import { create } from 'zustand';
-import { getMission, type MissionId } from '../data/missions';
+import { defaultCallsign, getMission } from '../data/missions';
+
+type MissionId = string;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -117,7 +119,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
 
   selectMission: (id) => {
     const mission = getMission(id);
-    set({ selectedMissionId: id, satelliteName: mission ? mission.callsign : '' });
+    set({ selectedMissionId: id, satelliteName: mission ? defaultCallsign(mission) : '' });
   },
 
   setSatelliteName: (name) => set({ satelliteName: name.slice(0, 16) }),
