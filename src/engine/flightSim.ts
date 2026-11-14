@@ -190,6 +190,7 @@ export class FlightSim {
       tier: getTierConfig(this.mission),
       rampFactor: 1 + DIFFICULTY_RAMP * (n > 1 ? i / (n - 1) : 0),
       worldW: this.aspect,
+      shipHalfW: this.ship.halfW,
       shipHalfH: this.ship.halfH,
       slowestSpeed: slowestPossibleSpeed(),
     };

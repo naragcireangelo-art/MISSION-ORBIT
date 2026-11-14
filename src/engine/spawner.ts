@@ -39,7 +39,8 @@ export interface SpawnContext {
   rampFactor: number;
   /** World width (aspect ratio). */
   worldW: number;
-  /** Chassis half-height of the player's ship (world units). */
+  /** Chassis half-size of the player's ship (world units). */
+  shipHalfW: number;
   shipHalfH: number;
   /** Speed of the slowest possible build, in world units per second. */
   slowestSpeed: number;
@@ -119,7 +120,12 @@ export class Spawner {
   // ── Lane ───────────────────────────────────────────────────────────────────
 
   private moveLane(interval: number, gap: number, ctx: SpawnContext): void {
-    const maxShift = ctx.slowestSpeed * interval * GAMEPLAY.LANE_SHIFT_FRACTION;
+    // A column of rocks takes `passTime` to sweep past the ship; the ship can only relocate in the
+    // time left over, plus the slack inside the lane itself (the lane is wider than the ship).
+    const passTime = (2 * GAMEPLAY.ROCK_LARGE + 2 * ctx.shipHalfW) / asteroidSpeed(ctx);
+    const freeTime = Math.max(0, interval - passTime);
+    const slack = (gap - ctx.shipHalfH) * 0.6;
+    const maxShift = ctx.slowestSpeed * freeTime * GAMEPLAY.LANE_SHIFT_FRACTION * 1.6 + slack;
     const shift = (this.rng() * 2 - 1) * maxShift;
     const lo = gap + 0.04;
     const hi = 1 - gap - 0.04;
