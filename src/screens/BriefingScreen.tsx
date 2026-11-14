@@ -59,7 +59,7 @@ export function BriefingScreen() {
     setScreen('assembly');
   };
   const next = (): void => {
-    uiAudio.sfx.confirm();
+    uiAudio.sfx.next();
     setScreen('objectives');
   };
   const skip = (): void => {
