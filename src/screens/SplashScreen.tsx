@@ -16,6 +16,7 @@ import { CelestialCodexModal } from '../components/ui/CelestialCodexModal';
 import { useReducedMotion, useViewport } from '../components/ui/hooks';
 import { IconCodex, IconMute, IconSound } from '../components/ui/icons';
 import { MissionEmblem } from '../components/ui/MissionEmblem';
+import { prewarmTextures } from '../components/ui/planet/planetTextures';
 import { PlanetSphere, type SphereDecorator, type SphereDrawContext } from '../components/ui/planet/PlanetSphere';
 import { SpaceBackdrop } from '../components/ui/SpaceBackdrop';
 import { MISSIONS } from '../data/missions';
@@ -134,6 +135,18 @@ export function SplashScreen() {
   const reduced = useReducedMotion();
   const { width, height } = useViewport();
   const [stage, setStage] = useState<Stage>(reduced ? 'ready' : 'intro');
+
+  // Once the intro is under way, build the other planet textures in idle time so the next screens open instantly.
+  useEffect(() => {
+    let stop = (): void => {};
+    const timer = window.setTimeout(() => {
+      stop = prewarmTextures();
+    }, 1800);
+    return () => {
+      window.clearTimeout(timer);
+      stop();
+    };
+  }, []);
   const launchTimer = useRef<number | null>(null);
   const readyTimer = useRef<number | null>(null);
 
@@ -151,6 +164,17 @@ export function SplashScreen() {
       if (readyTimer.current !== null) window.clearTimeout(readyTimer.current);
     };
   }, [reduced]);
+
+  // Create the audio engine on the first touch, so the launch click isn't also building it.
+  useEffect(() => {
+    const warm = (): void => uiAudio.start();
+    window.addEventListener('pointerdown', warm, { once: true });
+    window.addEventListener('keydown', warm, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', warm);
+      window.removeEventListener('keydown', warm);
+    };
+  }, []);
 
   useEffect(
     () => () => {
@@ -273,7 +297,8 @@ export function SplashScreen() {
               body="earth"
               size={earthSize}
               pad={2.5}
-              fps={30}
+              fps={24}
+              paused={stage === 'launching'}
               decorator={decorator}
               startAngle={2.4}
               label="Rotating Earth with satellites in orbit"

@@ -15,7 +15,7 @@ import { uiAudio } from '../../engine/uiAudio';
 import { useGameStore } from '../../store/useGameStore';
 import { IconCheck, IconClose, IconCodex, IconCrosshair } from './icons';
 import { BodyPortrait } from './planet/BodyPortrait';
-import { isSphereArt } from './planet/planetTextures';
+import { isSphereArt, prewarmTextures } from './planet/planetTextures';
 
 type GroupFilter = CodexGroup | 'all';
 
@@ -59,7 +59,9 @@ function CodexDialog() {
     uiAudio.sfx.open();
     const first = dialogRef.current?.querySelector<HTMLElement>('.mo-codex__list button');
     first?.focus();
+    const stopPrewarm = prewarmTextures();
     return () => {
+      stopPrewarm();
       const el = previouslyFocused.current;
       if (el instanceof HTMLElement) el.focus();
     };
@@ -207,7 +209,7 @@ function CodexDialog() {
                   <BodyPortrait
                     art={selected.art}
                     size={selected.art === 'saturn' ? 190 : 230}
-                    fps={30}
+                    fps={20}
                     label={`Portrait of ${selected.title}`}
                     interactive
                   />
