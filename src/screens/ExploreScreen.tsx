@@ -20,13 +20,14 @@ import { bodyArt } from '../components/flight/bodyLookup';
 import { MissionHud } from '../components/flight/MissionHud';
 import { ScanReticle } from '../components/flight/ScanReticle';
 import { ScanSideToast } from '../components/flight/ScanSideToast';
-import { MISSIONS, getMission } from '../data/missions';
+import { MISSIONS, getMission, getTierConfig } from '../data/missions';
 import { computeBuildStats } from '../data/parts';
 import { audioManager } from '../engine/audioManager';
 import { FlightSim } from '../engine/flightSim';
 import { GAMEPLAY } from '../engine/flightTypes';
 import { FIXED_DT, GameLoop } from '../engine/gameLoop';
 import { InputRouter, ScanTelemetry } from '../engine/inputRouter';
+import { uiAudio } from '../engine/uiAudio';
 import { useAssemblyStore } from '../store/useAssemblyStore';
 import { useGameStore } from '../store/useGameStore';
 import { reportMissionComplete, reportSignalLost } from '../store/useOutcomeStore';
@@ -118,8 +119,15 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     loop.reset();
     loopRef.current = loop;
 
-    // Audio needs a user gesture; the player has just clicked Play, so unlock now.
-    void audioManager.unlock().then(() => audioManager.setMuted(useGameStore.getState().muted));
+    // Audio needs a user gesture; the player has just clicked Play, so unlock now. The flight has its
+    // own soundtrack, so the menu synth steps aside until the player leaves.
+    uiAudio.stop();
+    void audioManager.unlock().then(() => {
+      audioManager.setMuted(useGameStore.getState().muted);
+      void audioManager.startMusic();
+    });
+    const maxRocks = Math.max(1, getTierConfig(mission).maxAsteroids);
+    let sinceAudio = 0;
 
     // ── Visual state that is not part of the rules ────────────────────────────
     let scroll = 0; // seconds of flight, advances with game time so stars slow in a scan
@@ -143,6 +151,10 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
 
     // ── Router → loop / sim / sound ───────────────────────────────────────────
     const offs: Array<() => void> = [
+      // The header's sound button changes `muted` while flying; keep the flight audio in step.
+      useGameStore.subscribe((state, prev) => {
+        if (state.muted !== prev.muted) audioManager.setMuted(state.muted);
+      }),
       router.on('phase', ({ phase, previous }) => {
         if (phase === 'SCAN') loop.enterSlowMo();
         else loop.exitSlowMo();
@@ -232,6 +244,16 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
             lastTargetId = id;
             const art = id ? bodyArt(id) : null;
             setTarget(id && art && sim.target ? { id, art, size: sim.target.size } : null);
+          }
+
+          // Music intensity follows how crowded the field is (and rises when the hull is critical).
+          sinceAudio += step.realDt;
+          if (sinceAudio >= 0.25) {
+            sinceAudio = 0;
+            const calm = sim.status !== 'flying' || router.getPhase() === 'SCAN';
+            const crowd = Math.min(1, sim.asteroids.length / maxRocks);
+            const danger = sim.hull === 1 && sim.maxHull > 1 ? 0.9 : 0;
+            audioManager.setIntensity(calm ? 0 : Math.max(crowd * 0.8, danger));
           }
 
           // HUD numbers that change continuously are throttled to ~10 per second.
@@ -351,6 +373,9 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
       offSystems.forEach((off) => off());
       offLayers.forEach((off) => off());
       audioManager.stopAlarm();
+      audioManager.setIntensity(0);
+      audioManager.stopMusic(600);
+      uiAudio.start(); // bring the menu soundtrack back for the outcome screens and the Archive
       simRef.current = null;
       loopRef.current = null;
       if (import.meta.env.DEV) delete (window as unknown as { __moSim?: FlightSim }).__moSim;
@@ -375,9 +400,11 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
       loop.pause();
       router.detach();
       audioManager.stopAlarm();
+      audioManager.stopMusic(300);
     } else {
       loop.resume();
       router.attach();
+      void audioManager.startMusic(300);
       if (sim.hull === 1 && sim.maxHull > 1) audioManager.startAlarm();
       (document.activeElement as HTMLElement | null)?.blur();
     }
