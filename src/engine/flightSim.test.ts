@@ -191,3 +191,18 @@ describe('rules', { timeout: 60_000 }, () => {
     expect(triggerAt).toBeGreaterThan(sim.mission.segmentSeconds);
   });
 });
+
+describe('every real mission', { timeout: 300_000 }, () => {
+  const DEFAULT = createDefaultBuild('TEST');
+  for (const mission of MISSIONS) {
+    it(`${mission.code} ${mission.spacecraft} can be finished by the slowest and the default build`, () => {
+      for (const [label, build] of [['slowest', SLOWEST], ['default', DEFAULT]] as const) {
+        const r = flyMission(makeSim(build, mission.tier, 11, mission));
+        expect(r.status, `${mission.code} ${label}`).toBe('complete');
+        expect(r.scanned, `${mission.code} ${label}`).toBe(mission.targetIds.length);
+        // The bot is human-ish, not perfect: a couple of hits is fine, a pile of them is not.
+        expect(r.hits, `${mission.code} ${label} hits`).toBeLessThanOrEqual(2);
+      }
+    });
+  }
+});
