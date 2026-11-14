@@ -6,7 +6,7 @@
  * launch details. Press Play to launch into the Explore (gameplay) screen.
  *
  * Play is blocked until the build is ready (a valid callsign and all four parts); "Edit build"
- * returns to Assembly. Keyboard: Enter = Play, Esc = Back to Assembly.
+ * returns to Assembly. Keyboard: Enter = Play, Esc = Back to the Briefing.
  */
 
 import { useEffect, useMemo } from 'react';
@@ -54,6 +54,10 @@ export function ObjectivesScreen() {
   const ready = nameOk && partsOk;
 
   const goBack = (): void => {
+    uiAudio.sfx.click();
+    setScreen('briefing');
+  };
+  const editBuild = (): void => {
     uiAudio.sfx.click();
     setScreen('assembly');
   };
@@ -168,7 +172,7 @@ export function ObjectivesScreen() {
               Hull {stats.maxHull} · Speed {stats.moveSpeed.toFixed(2)} · Range{' '}
               {Math.round(stats.scanRangeMultiplier * 100)}% · Free errors {stats.freeErrors}
             </p>
-            <button type="button" className="mo-obj__info" onClick={goBack}>
+            <button type="button" className="mo-obj__info" onClick={editBuild}>
               Edit build
             </button>
           </section>

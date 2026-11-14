@@ -1,7 +1,7 @@
 /**
  * App.tsx — Screen switcher for Mission Orbit.
  *
- *   Splash → Archive (all levels) → Objectives (the chosen level) → Play → Explore (gameplay)
+ *   Splash → Archive → Assembly → Briefing → Objectives → Play → Explore → Complete / Lost → Outro
  *
  * Splash runs on its own; the other screens sit inside the slim Mission Control frame.
  * Explore is the real flight (ExploreScreen). `?hud-preview` swaps in the HUD test stage instead.
@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { FlightHudPreview } from './components/flight/FlightHudPreview';
 import { MissionControlFrame } from './components/ui/MissionControlFrame';
 import { AssemblyScreen } from './screens/AssemblyScreen';
+import { BriefingScreen } from './screens/BriefingScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { MissionArchiveScreen } from './screens/MissionArchiveScreen';
 import { MissionCompleteScreen } from './screens/MissionCompleteScreen';
@@ -54,6 +55,9 @@ export default function App() {
       break;
     case 'assembly':
       content = <AssemblyScreen />;
+      break;
+    case 'briefing':
+      content = <BriefingScreen />;
       break;
     case 'objectives':
       content = <ObjectivesScreen />;
