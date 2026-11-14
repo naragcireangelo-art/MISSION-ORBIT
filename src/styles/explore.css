@@ -15,3 +15,49 @@
   pointer-events: none;
   will-change: transform;
 }
+
+/* Pause menu and the small "ESC · PAUSE" reminder. */
+.mo-explore__hint {
+  position: absolute;
+  right: 18px;
+  bottom: 12px;
+  z-index: 4;
+  margin: 0;
+  font-family: var(--mo-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--mo-faint);
+  pointer-events: none;
+}
+.mo-pause {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 5, 13, 0.72);
+  backdrop-filter: blur(4px);
+}
+.mo-pause__card {
+  min-width: min(380px, 88%);
+  padding: 26px 30px 28px;
+  border: 1px solid var(--mo-line-2);
+  border-radius: 8px;
+  background: var(--mo-panel-solid);
+  box-shadow: 0 0 40px rgba(111, 243, 255, 0.12);
+  display: grid;
+  gap: 10px;
+  text-align: center;
+}
+.mo-pause__title { margin: 0; font-family: var(--mo-font-display); font-size: 28px; letter-spacing: 0.24em; text-transform: uppercase; }
+.mo-pause__note { margin: 0 0 8px; font-size: 14px; color: var(--mo-dim); }
+.mo-pause__actions { display: grid; gap: 10px; }
+.mo-pause__actions .mo-btn { justify-content: space-between; }
+.mo-pause__actions kbd {
+  font-family: var(--mo-font-mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.7;
+}

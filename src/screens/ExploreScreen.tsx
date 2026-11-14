@@ -48,8 +48,15 @@ interface Popup {
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
+/** Restarting remounts the flight with a fresh sim, router and clocks (same build, same mission). */
 export function ExploreScreen() {
+  const [run, setRun] = useState(0);
+  return <ExploreRun key={run} onRestart={() => setRun((n) => n + 1)} />;
+}
+
+function ExploreRun({ onRestart }: { onRestart: () => void }) {
   const selectedId = useGameStore((s) => s.selectedMissionId);
+  const setScreen = useGameStore((s) => s.setScreen);
   const mission = getMission(selectedId) ?? MISSIONS[0];
   const build = useAssemblyStore((s) => s.build);
 
@@ -67,7 +74,10 @@ export function ExploreScreen() {
   const [scanned, setScanned] = useState<string[]>([]);
   const [target, setTarget] = useState<TargetView | null>(null);
   const [stageH, setStageH] = useState(700);
+  const [paused, setPaused] = useState(false);
 
+  const loopRef = useRef<GameLoop | null>(null);
+  const resumeBtnRef = useRef<HTMLButtonElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const backRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -104,6 +114,7 @@ export function ExploreScreen() {
       },
     });
     loop.reset();
+    loopRef.current = loop;
 
     // Audio needs a user gesture; the player has just clicked Play, so unlock now.
     void audioManager.unlock().then(() => audioManager.setMuted(useGameStore.getState().muted));
@@ -339,10 +350,67 @@ export function ExploreScreen() {
       offLayers.forEach((off) => off());
       audioManager.stopAlarm();
       simRef.current = null;
+      loopRef.current = null;
     };
     // The mission and build are fixed for the lifetime of a flight; Retry remounts this screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Pause ────────────────────────────────────────────────────────────────────
+  // Esc toggles the pause menu; losing the window or tab pauses automatically. While paused the loop
+  // is frozen (so the scan clock and WPM stop too) and the router is detached, so typed letters
+  // cannot advance a scan behind the menu.
+  const pausedRef = useRef(false);
+  const applyPause = (next: boolean): void => {
+    const sim = simRef.current;
+    const loop = loopRef.current;
+    if (!sim || !loop || pausedRef.current === next) return;
+    if (next && sim.status !== 'flying') return; // nothing to pause once the run is ending
+    pausedRef.current = next;
+    setPaused(next);
+    if (next) {
+      loop.pause();
+      router.detach();
+      audioManager.stopAlarm();
+    } else {
+      loop.resume();
+      router.attach();
+      if (sim.hull === 1 && sim.maxHull > 1) audioManager.startAlarm();
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
+  };
+  const applyPauseRef = useRef(applyPause);
+  applyPauseRef.current = applyPause;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        applyPauseRef.current(!pausedRef.current);
+      } else if (pausedRef.current) {
+        const k = e.key.toLowerCase();
+        if (k === 'r') onRestart();
+        else if (k === 'q') setScreen('archive');
+      }
+    };
+    const onHide = (): void => {
+      if (document.hidden) applyPauseRef.current(true);
+    };
+    const onBlur = (): void => applyPauseRef.current(true);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [onRestart, setScreen]);
+
+  useEffect(() => {
+    if (paused) resumeBtnRef.current?.focus();
+  }, [paused]);
 
   const getAnchor = () => {
     const t = simRef.current?.target;
@@ -374,6 +442,31 @@ export function ExploreScreen() {
         />
         <ScanReticle router={router} getAnchor={getAnchor} />
         <ScanSideToast router={router} />
+        {!paused && <p className="mo-explore__hint">ESC · PAUSE</p>}
+        {paused && (
+          <div className="mo-pause" role="dialog" aria-modal="true" aria-labelledby="mo-pause-title">
+            <div className="mo-pause__card">
+              <p className="mo-eyebrow">
+                {mission.code} · {mission.spacecraft}
+              </p>
+              <h2 id="mo-pause-title" className="mo-pause__title">
+                Paused
+              </h2>
+              <p className="mo-pause__note">The flight is frozen. Your scan progress is kept.</p>
+              <div className="mo-pause__actions">
+                <button ref={resumeBtnRef} type="button" className="mo-btn mo-btn--primary" onClick={() => applyPause(false)}>
+                  Resume <kbd>Esc</kbd>
+                </button>
+                <button type="button" className="mo-btn mo-btn--ghost" onClick={onRestart}>
+                  Restart mission <kbd>R</kbd>
+                </button>
+                <button type="button" className="mo-btn mo-btn--ghost" onClick={() => setScreen('archive')}>
+                  Quit to Archive <kbd>Q</kbd>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
