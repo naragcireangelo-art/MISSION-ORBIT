@@ -181,12 +181,19 @@ class UiAudio {
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
     const left = buffer.getChannelData(0);
     const right = buffer.getChannelData(1);
-    const SLICE = 12000;
+    // The decay curve is looked up from a small table and interpolated, which is much cheaper than
+    // raising to a power for each of the ~330,000 samples.
+    const TABLE = 512;
+    const curve = new Float32Array(TABLE + 1);
+    for (let k = 0; k <= TABLE; k++) curve[k] = Math.pow(1 - k / TABLE, decay);
+    const SLICE = 16000;
     let i = 0;
     const step = (): void => {
       const end = Math.min(length, i + SLICE);
       for (; i < end; i++) {
-        const envelope = Math.pow(1 - i / length, decay);
+        const pos = (i / length) * TABLE;
+        const k = pos | 0;
+        const envelope = curve[k] + (curve[k + 1] - curve[k]) * (pos - k);
         left[i] = (Math.random() * 2 - 1) * envelope;
         right[i] = (Math.random() * 2 - 1) * envelope;
       }
