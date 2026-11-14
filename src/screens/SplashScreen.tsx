@@ -165,6 +165,16 @@ export function SplashScreen() {
     };
   }, [reduced]);
 
+  // Build the audio engine while the intro settles (after the Earth has appeared), so pressing Enter
+  // does not have to. If the player is quicker than that, `start()` builds it on demand as before.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => uiAudio.prepare(), { timeout: 1500 });
+      else uiAudio.prepare();
+    }, 3400);
+    return () => window.clearTimeout(id);
+  }, []);
+
   // Create the audio engine on the first touch, so the launch click isn't also building it.
   useEffect(() => {
     const warm = (): void => uiAudio.start();

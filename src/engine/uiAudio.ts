@@ -52,16 +52,29 @@ class UiAudio {
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
+  /**
+   * Create the audio context and build its graph, without playing anything. This is the expensive part
+   * of starting audio (a few hundred milliseconds), so the splash screen calls it while the intro settles
+   * and the launch keypress does not have to. It is safe to call repeatedly and needs no user gesture
+   * (the context just stays suspended until `start()` resumes it).
+   */
+  prepare(): void {
+    if (this.ctx) return;
+    try {
+      const Ctor: AudioContextCtor | undefined =
+        window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioContextCtor }).webkitAudioContext;
+      if (!Ctor) return;
+      this.ctx = new Ctor();
+      this.buildGraph();
+    } catch {
+      /* audio is optional — the game works silently */
+    }
+  }
+
   /** Create / resume the audio context and fade the ambient soundtrack in. Safe to call repeatedly. */
   start(): void {
     try {
-      if (!this.ctx) {
-        const Ctor: AudioContextCtor | undefined =
-          window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioContextCtor }).webkitAudioContext;
-        if (!Ctor) return;
-        this.ctx = new Ctor();
-        this.buildGraph();
-      }
+      this.prepare();
       const ctx = this.ctx;
       if (!ctx) return;
       if (this.suspendTimer !== null) {
@@ -143,7 +156,7 @@ class UiAudio {
 
     // Long, dark reverb built from decaying noise.
     const convolver = ctx.createConvolver();
-    convolver.buffer = this.makeImpulse(3.4, 2.6);
+    this.fillImpulse(convolver, 3.4, 2.6);
     const reverbSend = ctx.createGain();
     reverbSend.gain.value = 0.9;
     reverbSend.connect(convolver);
@@ -157,17 +170,30 @@ class UiAudio {
     this.reverbSend = reverbSend;
   }
 
-  private makeImpulse(seconds: number, decay: number): AudioBuffer {
-    const ctx = this.ctx as AudioContext;
+  /**
+   * Fill the reverb's impulse response (decaying noise) a slice at a time, so no single task is long.
+   * The reverb is silent until the last slice lands, which is well before it is first needed.
+   */
+  private fillImpulse(convolver: ConvolverNode, seconds: number, decay: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
     const length = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) {
-      const data = buffer.getChannelData(c);
-      for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
+    const SLICE = 12000;
+    let i = 0;
+    const step = (): void => {
+      const end = Math.min(length, i + SLICE);
+      for (; i < end; i++) {
+        const envelope = Math.pow(1 - i / length, decay);
+        left[i] = (Math.random() * 2 - 1) * envelope;
+        right[i] = (Math.random() * 2 - 1) * envelope;
       }
-    }
-    return buffer;
+      if (i < length) window.setTimeout(step, 0);
+      else convolver.buffer = buffer;
+    };
+    step();
   }
 
   private fadeAmbientIn(): void {
