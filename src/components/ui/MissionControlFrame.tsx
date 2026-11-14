@@ -1,6 +1,6 @@
 /**
- * MissionControlFrame.tsx — Slim Mission Control frame around the Archive and Objectives screens:
- * brand on the left, Codex and Sound buttons on the right, disclaimer along the bottom.
+ * MissionControlFrame.tsx — Slim Mission Control frame around the in-game screens:
+ * brand and the 6-step progress rail across the top, Codex and Sound buttons on the right, disclaimer along the bottom.
  * Hotkeys: C = Celestial Codex, M = mute (off on the Explore screen, where letters are for scanning).
  *
  *   <MissionControlFrame>{currentScreenElement}</MissionControlFrame>
@@ -13,6 +13,7 @@ import { uiAudio } from '../../engine/uiAudio';
 import { useGameStore } from '../../store/useGameStore';
 import { IconCodex, IconMute, IconSound } from './icons';
 import { MissionEmblem } from './MissionEmblem';
+import { ProgressRail } from './ProgressRail';
 import { CelestialCodexModal } from './CelestialCodexModal';
 import { SpaceBackdrop } from './SpaceBackdrop';
 
@@ -74,6 +75,8 @@ export function MissionControlFrame({ children }: MissionControlFrameProps) {
             <span>DEEP SPACE OPERATIONS</span>
           </div>
         </div>
+
+        <ProgressRail screen={screen} />
 
         <div className="mo-telemetry">
           <div className="mo-telemetry__buttons">

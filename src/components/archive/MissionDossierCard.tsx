@@ -143,7 +143,7 @@ export function MissionDossierCard({
             </>
           ) : (
             <>
-              {status === 'complete' ? 'REPLAY' : 'VIEW OBJECTIVES'} <IconArrowRight size={14} />
+              {status === 'complete' ? 'REPLAY' : 'START MISSION'} <IconArrowRight size={14} />
             </>
           )}
         </span>
