@@ -86,17 +86,17 @@ export const PARTS: { [S in PartSlot]: readonly PartBySlot[S][] } = {
   body: [
     {
       id: 'body-scout', slot: 'body', name: 'Scout', typeLabel: 'FLIGHT CORE',
-      massKg: 150, powerW: 70, hull: 3, speedMultiplier: 1.0,
+      massKg: 150, powerW: 70, hull: 3, speedMultiplier: 1.15,
       unlockStars: 0, source: 'design',
     },
     {
       id: 'body-surveyor', slot: 'body', name: 'Surveyor', typeLabel: 'FLIGHT CORE',
-      massKg: 185, powerW: 90, hull: 5, speedMultiplier: 0.95,
+      massKg: 185, powerW: 90, hull: 5, speedMultiplier: 1.0,
       unlockStars: 0, source: 'reference',
     },
     {
       id: 'body-bulwark', slot: 'body', name: 'Bulwark', typeLabel: 'FLIGHT CORE',
-      massKg: 240, powerW: 110, hull: 7, speedMultiplier: 0.9,
+      massKg: 240, powerW: 110, hull: 7, speedMultiplier: 0.8,
       unlockStars: 10, source: 'design',
     },
   ],

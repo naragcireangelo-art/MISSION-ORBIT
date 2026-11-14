@@ -40,9 +40,19 @@ Every wave keeps a free lane open, and the lane only moves as far as the **slowe
 | `screens/ExploreScreen.tsx` | GameLoop + InputRouter + sim + art layers + HUD |
 | `art/` | `drawSatellite`, `drawAsteroid`, `drawStarfield` |
 
+## Around the flight
+
+- **Intro and banners.** Each flight opens with a short level intro (the first flight ever adds a one-time tip about the steering lock). When a target appears a banner announces it ("Venus approaching"; hidden targets read "Unknown object").
+- **Pause.** `Esc` opens the pause menu (Resume, Restart mission, Quit to Archive). Losing window focus pauses automatically. While paused the loop is frozen and the input router is detached, so typed letters cannot advance a scan behind the menu.
+- **Feedback.** A hit flashes the screen red and throws sparks; losing the last hull point adds a shockwave. With reduced motion on, the flash is gentler and the sparks, shockwave and star drift are off.
+- **Audio.** The flight swaps the menu synth for `audioManager`: ambient music whose intensity follows how crowded the field is, scan and hit sounds, a hull-1 alarm, and the header's mute button stays in sync. Pausing pauses the music.
+
+## Part balance
+
+Bodies trade hull against speed: Scout (hull 3, speed x1.15), Surveyor (hull 5, x1.0), Bulwark (hull 7, x0.8). Thrusters set the base speed (0.4 / 0.5 / 0.6 screen heights per second). The slowest build is Bulwark + Cold Gas at 0.32, and the spawner's safe lane is built for that speed. Antennas set scan range and score bonus; lasers set free typing errors.
+
 ## Not built yet
 
-- Pause, and quit to the Archive from inside a flight.
 - Checkpoints after each scan (a loss restarts the level).
-- Music during flight (`audioManager` sound effects are wired; the ambient track comes from the menu).
-- Balance: part stats and tier numbers are initial values and need playtesting.
+- What stars can be spent on, and part unlocks (`ENFORCE_PART_UNLOCKS` is off, so every part is free).
+- Human playtest tuning: the numbers above were checked with a bot, which cannot say whether a level is fun.

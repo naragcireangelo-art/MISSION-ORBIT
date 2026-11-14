@@ -15,18 +15,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { drawAsteroid, drawSatellite, drawStarfield } from '../art';
+import { useReducedMotion } from '../components/ui/hooks';
 import { BodyPortrait } from '../components/ui/planet/BodyPortrait';
-import { bodyArt } from '../components/flight/bodyLookup';
+import { bodyArt, findBody } from '../components/flight/bodyLookup';
 import { MissionHud } from '../components/flight/MissionHud';
 import { ScanReticle } from '../components/flight/ScanReticle';
 import { ScanSideToast } from '../components/flight/ScanSideToast';
-import { MISSIONS, getMission } from '../data/missions';
+import { MISSIONS, getMission, getTierConfig } from '../data/missions';
 import { computeBuildStats } from '../data/parts';
 import { audioManager } from '../engine/audioManager';
 import { FlightSim } from '../engine/flightSim';
 import { GAMEPLAY } from '../engine/flightTypes';
 import { FIXED_DT, GameLoop } from '../engine/gameLoop';
 import { InputRouter, ScanTelemetry } from '../engine/inputRouter';
+import { uiAudio } from '../engine/uiAudio';
 import { useAssemblyStore } from '../store/useAssemblyStore';
 import { useGameStore } from '../store/useGameStore';
 import { reportMissionComplete, reportSignalLost } from '../store/useOutcomeStore';
@@ -39,6 +41,23 @@ interface TargetView {
   size: number;
 }
 
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  life: number;
+  color: string;
+}
+
+/** An expanding ring, used for the death burst. */
+interface Shock {
+  x: number;
+  y: number;
+  age: number;
+}
+
 interface Popup {
   text: string;
   x: number;
@@ -48,8 +67,27 @@ interface Popup {
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
+/** The one-time tip about the steering lock is shown on the player's first flight only. */
+const HINT_KEY = 'mission-orbit:seen-scan-hint';
+function takeFirstRunHint(): boolean {
+  try {
+    if (window.localStorage.getItem(HINT_KEY)) return false;
+    window.localStorage.setItem(HINT_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Restarting remounts the flight with a fresh sim, router and clocks (same build, same mission). */
 export function ExploreScreen() {
+  const [run, setRun] = useState(0);
+  return <ExploreRun key={run} onRestart={() => setRun((n) => n + 1)} />;
+}
+
+function ExploreRun({ onRestart }: { onRestart: () => void }) {
   const selectedId = useGameStore((s) => s.selectedMissionId);
+  const setScreen = useGameStore((s) => s.setScreen);
   const mission = getMission(selectedId) ?? MISSIONS[0];
   const build = useAssemblyStore((s) => s.build);
 
@@ -67,7 +105,16 @@ export function ExploreScreen() {
   const [scanned, setScanned] = useState<string[]>([]);
   const [target, setTarget] = useState<TargetView | null>(null);
   const [stageH, setStageH] = useState(700);
+  const [paused, setPaused] = useState(false);
+  const reduced = useReducedMotion();
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
+  const [intro, setIntro] = useState(true);
+  const [showHint] = useState(takeFirstRunHint);
+  const [incoming, setIncoming] = useState<{ label: string; seq: number } | null>(null);
 
+  const loopRef = useRef<GameLoop | null>(null);
+  const resumeBtnRef = useRef<HTMLButtonElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const backRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -91,6 +138,8 @@ export function ExploreScreen() {
       seed: (Math.random() * 0xffffffff) >>> 0,
     });
     simRef.current = sim;
+    // Dev only: lets browser tests and the console inspect or tweak the live run (`window.__moSim`).
+    if (import.meta.env.DEV) (window as unknown as { __moSim?: FlightSim }).__moSim = sim;
 
     router.reset();
     telemetry.reset();
@@ -104,9 +153,17 @@ export function ExploreScreen() {
       },
     });
     loop.reset();
+    loopRef.current = loop;
 
-    // Audio needs a user gesture; the player has just clicked Play, so unlock now.
-    void audioManager.unlock().then(() => audioManager.setMuted(useGameStore.getState().muted));
+    // Audio needs a user gesture; the player has just clicked Play, so unlock now. The flight has its
+    // own soundtrack, so the menu synth steps aside until the player leaves.
+    uiAudio.stop();
+    void audioManager.unlock().then(() => {
+      audioManager.setMuted(useGameStore.getState().muted);
+      void audioManager.startMusic();
+    });
+    const maxRocks = Math.max(1, getTierConfig(mission).maxAsteroids);
+    let sinceAudio = 0;
 
     // ── Visual state that is not part of the rules ────────────────────────────
     let scroll = 0; // seconds of flight, advances with game time so stars slow in a scan
@@ -115,6 +172,17 @@ export function ExploreScreen() {
     let sinceHud = 0;
     let ended = false;
     const popups: Popup[] = [];
+    const sparks: Spark[] = [];
+    const shocks: Shock[] = [];
+    const burst = (x: number, y: number, count: number, speed: number): void => {
+      if (reducedRef.current) return; // no flying debris for players who asked for less motion
+      const colors = ['#ffb84d', '#ff6b3d', '#ffe6a8', '#6ff3ff'];
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = speed * (0.35 + Math.random() * 0.9);
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, life: 0.5 + Math.random() * 0.6, color: colors[i % colors.length] });
+      }
+    };
     const backCtx = back.getContext('2d');
 
     const sizeBack = (): void => {
@@ -130,6 +198,10 @@ export function ExploreScreen() {
 
     // ── Router → loop / sim / sound ───────────────────────────────────────────
     const offs: Array<() => void> = [
+      // The header's sound button changes `muted` while flying; keep the flight audio in step.
+      useGameStore.subscribe((state, prev) => {
+        if (state.muted !== prev.muted) audioManager.setMuted(state.muted);
+      }),
       router.on('phase', ({ phase, previous }) => {
         if (phase === 'SCAN') loop.enterSlowMo();
         else loop.exitSlowMo();
@@ -162,14 +234,30 @@ export function ExploreScreen() {
           if (ended) return;
           const aspect = aspectNow();
           if (Math.abs(aspect - sim.aspect) > 0.01) sim.setAspect(aspect);
-          scroll += step.dt;
+          if (!reducedRef.current) scroll += step.dt;
           hitFlash = Math.max(0, hitFlash - step.realDt * 1.8);
+          for (const sp of sparks) {
+            sp.age += step.realDt;
+            sp.x += sp.vx * step.realDt;
+            sp.y += sp.vy * step.realDt;
+            sp.vx *= 0.97;
+            sp.vy *= 0.97;
+          }
+          for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].age > sparks[i].life) sparks.splice(i, 1);
+          for (const sh of shocks) sh.age += step.realDt;
+          while (shocks.length && shocks[0].age > 0.9) shocks.shift();
           for (const p of popups) p.age += step.realDt;
           while (popups.length && popups[0].age > 1.1) popups.shift();
 
           const events = sim.step(step.dt, step.realDt, { move: router.getMovement(), phase: router.getPhase() });
           for (const e of events) {
             switch (e.type) {
+              case 'targetSpawned': {
+                const unknown = (mission.hiddenTargetIds ?? []).includes(e.id);
+                const label = unknown ? 'Unknown object' : (findBody(e.id)?.name ?? e.id);
+                setIncoming((prev) => ({ label, seq: (prev?.seq ?? 0) + 1 }));
+                break;
+              }
               case 'scanTrigger':
                 router.beginScan(e.name);
                 audioManager.scanLock();
@@ -178,11 +266,13 @@ export function ExploreScreen() {
                 audioManager.hullHit();
                 hitFlash = 1;
                 setHull(e.hull);
+                burst(sim.ship.x, sim.ship.y, e.hull === 0 ? 46 : 14, e.hull === 0 ? 0.55 : 0.32);
+                if (e.hull === 0 && !reducedRef.current) shocks.push({ x: sim.ship.x, y: sim.ship.y, age: 0 });
                 break;
               case 'nearMiss':
                 audioManager.nearMiss(e.pan);
                 setNearMisses(sim.nearMisses);
-                popups.push({ text: 'NEAR MISS', x: sim.ship.x, y: sim.ship.y - 0.12, age: 0 });
+                popups.push({ text: 'NEAR MISS', x: sim.ship.x + 0.12, y: sim.ship.y - 0.08, age: 0 });
                 break;
               case 'hullCritical':
                 audioManager.startAlarm();
@@ -219,6 +309,16 @@ export function ExploreScreen() {
             lastTargetId = id;
             const art = id ? bodyArt(id) : null;
             setTarget(id && art && sim.target ? { id, art, size: sim.target.size } : null);
+          }
+
+          // Music intensity follows how crowded the field is (and rises when the hull is critical).
+          sinceAudio += step.realDt;
+          if (sinceAudio >= 0.25) {
+            sinceAudio = 0;
+            const calm = sim.status !== 'flying' || router.getPhase() === 'SCAN';
+            const crowd = Math.min(1, sim.asteroids.length / maxRocks);
+            const danger = sim.hull === 1 && sim.maxHull > 1 ? 0.9 : 0;
+            audioManager.setIntensity(calm ? 0 : Math.max(crowd * 0.8, danger));
           }
 
           // HUD numbers that change continuously are throttled to ~10 per second.
@@ -302,11 +402,34 @@ export function ExploreScreen() {
         (f) => {
           const { ctx, width, height } = f;
           if (hitFlash > 0) {
+            const flashMax = reducedRef.current ? 0.22 : 0.55; // a gentler flash when motion is reduced
             const g = ctx.createRadialGradient(width / 2, height / 2, height * 0.35, width / 2, height / 2, height * 0.95);
             g.addColorStop(0, 'rgba(255, 70, 50, 0)');
-            g.addColorStop(1, `rgba(255, 70, 50, ${0.55 * hitFlash})`);
+            g.addColorStop(1, `rgba(255, 70, 50, ${flashMax * hitFlash})`);
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, width, height);
+          }
+          if (sparks.length || shocks.length) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const sp of sparks) {
+              const k = 1 - sp.age / sp.life;
+              ctx.globalAlpha = Math.max(0, k);
+              ctx.fillStyle = sp.color;
+              ctx.beginPath();
+              ctx.arc(sp.x * height, sp.y * height, (1.2 + 2.4 * k) * (height / 760), 0, Math.PI * 2);
+              ctx.fill();
+            }
+            for (const sh of shocks) {
+              const k = sh.age / 0.9;
+              ctx.globalAlpha = Math.max(0, 1 - k) * 0.8;
+              ctx.strokeStyle = '#ffb84d';
+              ctx.lineWidth = 3 * (height / 760);
+              ctx.beginPath();
+              ctx.arc(sh.x * height, sh.y * height, (0.04 + 0.34 * k) * height, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.restore();
           }
           ctx.textAlign = 'center';
           ctx.font = `600 ${Math.round(height * 0.02)}px ui-monospace, Consolas, monospace`;
@@ -338,11 +461,90 @@ export function ExploreScreen() {
       offSystems.forEach((off) => off());
       offLayers.forEach((off) => off());
       audioManager.stopAlarm();
+      audioManager.setIntensity(0);
+      audioManager.stopMusic(600);
+      uiAudio.start(); // bring the menu soundtrack back for the outcome screens and the Archive
       simRef.current = null;
+      loopRef.current = null;
+      if (import.meta.env.DEV) delete (window as unknown as { __moSim?: FlightSim }).__moSim;
     };
     // The mission and build are fixed for the lifetime of a flight; Retry remounts this screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Pause ────────────────────────────────────────────────────────────────────
+  // Esc toggles the pause menu; losing the window or tab pauses automatically. While paused the loop
+  // is frozen (so the scan clock and WPM stop too) and the router is detached, so typed letters
+  // cannot advance a scan behind the menu.
+  const pausedRef = useRef(false);
+  const applyPause = (next: boolean): void => {
+    const sim = simRef.current;
+    const loop = loopRef.current;
+    if (!sim || !loop || pausedRef.current === next) return;
+    if (next && sim.status !== 'flying') return; // nothing to pause once the run is ending
+    pausedRef.current = next;
+    setPaused(next);
+    if (next) {
+      loop.pause();
+      router.detach();
+      audioManager.stopAlarm();
+      audioManager.stopMusic(300);
+    } else {
+      loop.resume();
+      router.attach();
+      void audioManager.startMusic(300);
+      if (sim.hull === 1 && sim.maxHull > 1) audioManager.startAlarm();
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
+  };
+  const applyPauseRef = useRef(applyPause);
+  applyPauseRef.current = applyPause;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        applyPauseRef.current(!pausedRef.current);
+      } else if (pausedRef.current) {
+        const k = e.key.toLowerCase();
+        if (k === 'r') onRestart();
+        else if (k === 'q') setScreen('archive');
+      }
+    };
+    const onHide = (): void => {
+      if (document.hidden) applyPauseRef.current(true);
+    };
+    // Focus moving into an iframe or overlay also fires `blur`; only pause when the page truly lost focus.
+    const onBlur = (): void => {
+      window.setTimeout(() => {
+        if (!document.hasFocus()) applyPauseRef.current(true);
+      }, 0);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [onRestart, setScreen]);
+
+  useEffect(() => {
+    if (paused) resumeBtnRef.current?.focus();
+  }, [paused]);
+
+  // The level intro fades out on its own; the "approaching" banner clears itself too.
+  useEffect(() => {
+    const id = window.setTimeout(() => setIntro(false), showHint ? 6500 : 3800);
+    return () => window.clearTimeout(id);
+  }, [showHint]);
+  useEffect(() => {
+    if (!incoming) return;
+    const id = window.setTimeout(() => setIncoming(null), 3200);
+    return () => window.clearTimeout(id);
+  }, [incoming]);
 
   const getAnchor = () => {
     const t = simRef.current?.target;
@@ -374,6 +576,50 @@ export function ExploreScreen() {
         />
         <ScanReticle router={router} getAnchor={getAnchor} />
         <ScanSideToast router={router} />
+        {!paused && <p className="mo-explore__hint">ESC · PAUSE</p>}
+        {intro && !paused && (
+          <div className="mo-explore__intro" aria-live="polite" style={{ animationDuration: showHint ? '6.5s' : '3.8s' }}>
+            <p className="mo-eyebrow">
+              {mission.code} · {mission.spacecraft}
+            </p>
+            <p className="mo-explore__intro-title">{mission.objectiveHeadline}</p>
+            <p className="mo-explore__intro-line">Dodge the asteroids. Scan each world by typing its name.</p>
+            {showHint && (
+              <p className="mo-explore__intro-tip">
+                When a world locks on, time slows and steering freezes: that is your cue to type.
+              </p>
+            )}
+          </div>
+        )}
+        {incoming && !paused && !intro && (
+          <p key={incoming.seq} className="mo-explore__incoming" aria-live="polite">
+            {incoming.label} approaching
+          </p>
+        )}
+        {paused && (
+          <div className="mo-pause" role="dialog" aria-modal="true" aria-labelledby="mo-pause-title">
+            <div className="mo-pause__card">
+              <p className="mo-eyebrow">
+                {mission.code} · {mission.spacecraft}
+              </p>
+              <h2 id="mo-pause-title" className="mo-pause__title">
+                Paused
+              </h2>
+              <p className="mo-pause__note">The flight is frozen. Your scan progress is kept.</p>
+              <div className="mo-pause__actions">
+                <button ref={resumeBtnRef} type="button" className="mo-btn mo-btn--primary" onClick={() => applyPause(false)}>
+                  Resume <kbd>Esc</kbd>
+                </button>
+                <button type="button" className="mo-btn mo-btn--ghost" onClick={onRestart}>
+                  Restart mission <kbd>R</kbd>
+                </button>
+                <button type="button" className="mo-btn mo-btn--ghost" onClick={() => setScreen('archive')}>
+                  Quit to Archive <kbd>Q</kbd>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

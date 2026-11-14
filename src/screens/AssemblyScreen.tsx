@@ -28,8 +28,8 @@ import { useGameStore, type ScreenId } from '../store/useGameStore';
 import '../styles/missionControl.css';
 import '../styles/assembly.css';
 
-/** Screen that follows Assembly. Change this one line if a Briefing step is added in between. */
-export const NEXT_AFTER_ASSEMBLY: ScreenId = 'objectives';
+/** Screen that follows Assembly: the launch Briefing, then the Objectives. */
+export const NEXT_AFTER_ASSEMBLY: ScreenId = 'briefing';
 
 /** The mission the callsign was last pre-filled for, so choosing another level refreshes it. */
 let prefilledForMission: string | null = null;

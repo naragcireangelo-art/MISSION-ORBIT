@@ -16,7 +16,7 @@ function share(value: number, min: number, max: number): number {
 export function BuildStats({ stats }: BuildStatsProps) {
   const rows: { label: string; value: string; fill: number }[] = [
     { label: 'Hull integrity', value: `${stats.maxHull} hits`, fill: share(stats.maxHull, 2, 7) },
-    { label: 'Flight speed', value: `${stats.moveSpeed.toFixed(2)} /s`, fill: share(stats.moveSpeed, 0.3, 0.6) },
+    { label: 'Flight speed', value: `${stats.moveSpeed.toFixed(2)} /s`, fill: share(stats.moveSpeed, 0.3, 0.7) },
     {
       label: 'Scan range',
       value: `${Math.round(stats.scanRangeMultiplier * 100)}%`,

@@ -5,11 +5,11 @@
  * `sources` on each mission). All copy below is paraphrased for the game and
  * still needs the second-reviewer sign-off in PRD 8.4 before content lock.
  *
- * CONTENT STATUS — confirm against NASA pages before lock:
- *  - Voyager 1 launch time (12:56 UTC) and pad (LC-41)
- *  - Magellan "98% of the surface" mapping figure
- *  - Mission 9 scan targets (Webb, Carina, Stephan, WASP-39b) are deep-field
- *    objects rather than planets or moons; confirm this is intended.
+ * CONTENT STATUS — verified against NASA pages on 2026-11-15: every launch date, time,
+ * vehicle and site; the Magellan 98% figure (reached when mapping ended Sept 13, 1992);
+ * the Voyager 1 launch time (12:56 UT) and pad (LC-41). Mission 9 targets (Webb, Carina,
+ * Stephan, WASP-39b) are deep-field objects by design.
+ * Numeric body data matches NASA NSSDCA fact sheets (https://nssdc.gsfc.nasa.gov/planetary/factsheet/).
  */
 
 import { getBody } from './celestialBodies';
@@ -179,9 +179,9 @@ export const MISSIONS: readonly MissionData[] = [
     launchSite: 'Cape Canaveral, LC-36B',
     briefingTarget: { title: 'MERCURY', designation: 'SOL I', rangeAu: 0.39, bodyId: 'mercury' },
     launchContext:
-      'Mariner 10 was the first spacecraft designed to use a gravity assist. After leaving Earth it flew past Venus to bend its path toward Mercury, then flew by Mercury three times, in March 1974, September 1974 and March 1975.',
+      'Mariner 10 was the first spacecraft to use a gravity assist to change its flight path. After leaving Earth it flew past Venus to bend its path toward Mercury, then flew by Mercury three times, in March 1974, September 1974 and March 1975.',
     knownAtLaunch:
-      'Mercury had only been seen from Earth as a bright dot near the Sun. No spacecraft had ever visited it.',
+      'Little was known about Mercury. Its small size and closeness to the Sun made it hard to study from Earth, and no spacecraft had ever visited it.',
     discoveryFact:
       'First spacecraft to use an interplanetary gravity assist (via Venus) to reach Mercury, completing three flybys in 1974–1975 to map its cratered terrain.',
     objectiveHeadline: 'Documented Venus and Mercury',
@@ -209,7 +209,7 @@ export const MISSIONS: readonly MissionData[] = [
     launchSite: 'Cape Canaveral, LC-41',
     briefingTarget: { title: 'MARS', designation: 'SOL IV', rangeAu: 1.52, bodyId: 'mars' },
     launchContext:
-      'Viking 1 left Cape Canaveral on a Titan IIIE-Centaur rocket and spent about 11 months crossing to Mars. The mission carried an orbiter and a lander, built to photograph the planet and study its soil.',
+      'Viking 1 left Cape Canaveral on a Titan IIIE-Centaur rocket and entered orbit around Mars about 10 months later, in June 1976. The mission carried an orbiter and a lander, built to photograph the planet and study its soil.',
     knownAtLaunch:
       'Flyby and orbiting spacecraft had photographed Mars, but no mission had returned lasting data from its surface.',
     discoveryFact:
@@ -240,7 +240,7 @@ export const MISSIONS: readonly MissionData[] = [
     knownAtLaunch:
       'Uranus and Neptune were faint dots in telescopes. No spacecraft had ever visited either planet.',
     discoveryFact:
-      'Voyager 2 remains the only spacecraft to have visited Uranus (January 1986) and Neptune (August 1989), launched on a rare 175-year planetary alignment.',
+      'Voyager 2 remains the only spacecraft to have visited Uranus (January 1986) and Neptune (August 1989), launched to use a layout of the outer planets that comes around only about every 175 years.',
     objectiveHeadline: 'Documented the four giant planets and Triton',
     objectives: perTarget(['jupiter', 'saturn', 'uranus', 'neptune', 'triton']),
     targetIds: ['jupiter', 'saturn', 'uranus', 'neptune', 'triton'],
@@ -268,7 +268,7 @@ export const MISSIONS: readonly MissionData[] = [
     launchContext:
       'Voyager 1 launched on Sep 5, 1977, on a faster, shorter path than Voyager 2. Like its twin, it carries a Golden Record of sounds and images from Earth.',
     knownAtLaunch:
-      'Only the Pioneer probes had visited Jupiter and Saturn, and they returned far less detail than Voyager was built to capture.',
+      'Only the two Pioneer probes had visited Jupiter, and no spacecraft had ever reached Saturn. Voyager was built to capture far more detail.',
     discoveryFact:
       'Voyager 1 reached Jupiter in March 1979, revealing active volcanoes on Io, and Saturn in November 1980 before heading toward interstellar space.',
     objectiveHeadline: 'Documented Jupiter, Saturn and their moons',
@@ -278,6 +278,7 @@ export const MISSIONS: readonly MissionData[] = [
     segmentSeconds: 32,
     sources: [
       src('NASA Science: Voyager 1', 'https://science.nasa.gov/mission/voyager/voyager-1/'),
+      src('NASA Science: Pioneer 11 (Saturn flyby, Sept 1979)', 'https://science.nasa.gov/mission/pioneer-11/'),
       src('NASA NSSDCA: Voyager Project Information', 'https://nssdc.gsfc.nasa.gov/planetary/voyager.html'),
     ],
   },
@@ -298,9 +299,9 @@ export const MISSIONS: readonly MissionData[] = [
     launchContext:
       'Magellan was the first planetary spacecraft launched from a Space Shuttle. Atlantis released it from the payload bay on May 5, 1989 (UT), and it was built to see through the clouds of Venus with radar.',
     knownAtLaunch:
-      'Thick clouds hide the surface of Venus from cameras, so its landscape could only be guessed at.',
+      'Thick clouds hide the surface of Venus from ordinary cameras, so most of its landscape was still unmapped.',
     discoveryFact:
-      'Entered Venus orbit on Aug 10, 1990 and used synthetic aperture radar to map 98% of the planet\'s cloud-shrouded surface.',
+      'Entered Venus orbit on Aug 10, 1990 and used synthetic aperture radar to map 98% of the planet\'s cloud-shrouded surface by September 1992.',
     objectiveHeadline: 'Documented Earth and Venus',
     objectives: perTarget(['earth', 'venus']),
     targetIds: ['earth', 'venus'],
@@ -324,7 +325,7 @@ export const MISSIONS: readonly MissionData[] = [
     launchTimeUTC: '08:43',
     launchVehicle: 'Titan IVB/Centaur',
     launchSite: 'Cape Canaveral Air Force Station',
-    briefingTarget: { title: 'SATURN', designation: 'SOL VI', rangeAu: 9.58, bodyId: 'saturn' },
+    briefingTarget: { title: 'SATURN', designation: 'SOL VI', rangeAu: 9.54, bodyId: 'saturn' },
     launchContext:
       'Cassini-Huygens was a joint NASA, ESA and ASI mission. It needed gravity assists from Venus, Earth and Jupiter to reach Saturn, where it arrived in July 2004 carrying ESA\'s Huygens probe.',
     knownAtLaunch:
@@ -344,7 +345,10 @@ export const MISSIONS: readonly MissionData[] = [
     hiddenTargetIds: ['dione', 'tethys'],
     tier: 2,
     segmentSeconds: 35,
-    sources: [src('NASA Science: Cassini', 'https://science.nasa.gov/mission/cassini/')],
+    sources: [
+      src('NASA Science: Cassini', 'https://science.nasa.gov/mission/cassini/'),
+      src('NASA History: Cassini-Huygens begins its journey', 'https://www.nasa.gov/history/25-years-ago-cassini-huygens-begins-its-journey-to-reveal-saturns-secrets'),
+    ],
   },
   {
     id: 'm07-new-horizons',
@@ -361,17 +365,20 @@ export const MISSIONS: readonly MissionData[] = [
     launchSite: 'Cape Canaveral, SLC-41',
     briefingTarget: { title: 'PLUTO', designation: 'KUIPER BELT', rangeAu: 39.48, bodyId: 'pluto' },
     launchContext:
-      'New Horizons launched on an Atlas V 551 straight onto an escape path and passed the Moon\'s orbit in about nine hours. NASA describes it as the fastest spacecraft ever launched.',
+      'New Horizons launched on an Atlas V 551 straight onto an escape path and passed the Moon\'s orbit in about nine hours. NASA says it reached the highest launch speed of any spacecraft, measured relative to Earth.',
     knownAtLaunch:
       'Pluto, found in 1930, had only ever been seen as a blurry dot. No spacecraft had visited it.',
     discoveryFact:
-      'Fastest spacecraft ever launched from Earth, crossing the Moon\'s orbit in just 9 hours and executing the first reconnaissance flyby of Pluto and Charon on July 14, 2015.',
+      'Highest launch speed of any spacecraft relative to Earth, crossing the Moon\'s orbit in just 9 hours and executing the first reconnaissance flyby of Pluto and Charon on July 14, 2015.',
     objectiveHeadline: 'Documented Jupiter, Pluto and Charon',
     objectives: perTarget(['jupiter', 'pluto', 'charon']),
     targetIds: ['jupiter', 'pluto', 'charon'],
     tier: 3,
     segmentSeconds: 35,
-    sources: [src('NASA Science: New Horizons', 'https://science.nasa.gov/mission/new-horizons/')],
+    sources: [
+      src('NASA Science: New Horizons', 'https://science.nasa.gov/mission/new-horizons/'),
+      src('NASA History: New Horizons launched to Pluto and beyond', 'https://www.nasa.gov/history/15-years-ago-new-horizons-launched-to-pluto-and-beyond/'),
+    ],
   },
   {
     id: 'm08-juno',
@@ -401,6 +408,7 @@ export const MISSIONS: readonly MissionData[] = [
     sources: [
       src('NASA Science: Juno', 'https://science.nasa.gov/mission/juno/'),
       src('NASA JPL: Juno press kit', 'https://www.jpl.nasa.gov/news/press_kits/juno/facts/'),
+      src('NASA NSSDCA: Juno', 'https://nssdc.gsfc.nasa.gov/nmc/spacecraftDisplay.do?id=2011-040A'),
     ],
   },
   {
@@ -418,9 +426,9 @@ export const MISSIONS: readonly MissionData[] = [
     launchSite: 'Kourou, French Guiana (ELA-3)',
     briefingTarget: { title: 'SUN–EARTH L2', designation: 'DEEP FIELD', rangeAu: 1.01, bodyId: 'webb' },
     launchContext:
-      'Webb launched on Christmas Day 2021 from Kourou on an Ariane 5. It carries an 18-segment, gold-coated beryllium mirror 6.5 meters wide toward a point about 1.5 million kilometers from Earth.',
+      'Webb launched on Christmas Day 2021 from Kourou on an Ariane 5. It carries an 18-segment, gold-coated beryllium mirror 6.5 meters wide, and it orbits the Sun at a point called L2, about 1.5 million kilometers from Earth.',
     knownAtLaunch:
-      'Hubble had studied the universe mostly in visible light. Astronomers wanted a larger infrared telescope to see the first galaxies and the atmospheres of other worlds.',
+      'Hubble was optimized for ultraviolet and visible light. Astronomers wanted a larger infrared telescope to see the first galaxies and the atmospheres of other worlds.',
     discoveryFact:
       'Launched on Christmas Day to Sun–Earth Lagrange Point 2 (1.5 million km away) with an 18-segment gold-plated beryllium mirror to capture infrared light from the earliest galaxies and exoplanet atmospheres.',
     objectiveHeadline: 'Documented the deep field',
@@ -428,7 +436,13 @@ export const MISSIONS: readonly MissionData[] = [
     targetIds: ['webb', 'carina', 'stephan', 'wasp-39b'],
     tier: 4,
     segmentSeconds: 40,
-    sources: [src('NASA Science: Webb', 'https://science.nasa.gov/mission/webb/')],
+    sources: [
+      src('NASA Science: Webb', 'https://science.nasa.gov/mission/webb/'),
+      src('NASA Science: Webb launch', 'https://science.nasa.gov/mission/webb/launch/'),
+      src('NASA: Webb reveals the Cosmic Cliffs (Carina)', 'https://science.nasa.gov/missions/webb/nasas-webb-reveals-cosmic-cliffs-glittering-landscape-of-star-birth/'),
+      src('NASA: Webb sheds light on galaxy evolution (Stephan\'s Quintet)', 'https://science.nasa.gov/missions/webb/nasas-webb-sheds-light-on-galaxy-evolution-black-holes'),
+      src('NASA Exoplanets: Webb sees carbon dioxide (WASP-39 b)', 'https://exoplanets.nasa.gov/news/1711/webb-sees-carbon-dioxide-in-exoplanets-atmosphere'),
+    ],
   },
 ];
 
