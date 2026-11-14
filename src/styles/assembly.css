@@ -126,3 +126,22 @@
 @media (prefers-reduced-motion: reduce) {
   .mo-asm__bar i { transition: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   OBJECTIVES — spacecraft readiness panel (.mo-obj__ready), used by ObjectivesScreen.
+   ════════════════════════════════════════════════════════════════════════════ */
+.mo-obj__ready { margin-top: 6px; padding: 12px 16px; border: 1px solid var(--mo-line); border-left: 3px solid var(--mo-amber); border-radius: 6px; background: var(--mo-panel); display: grid; gap: 8px; max-width: 52ch; }
+.mo-obj__ready.is-ready { border-left-color: var(--mo-green); }
+.mo-obj__ready-title { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-family: var(--mo-font-mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mo-cyan); font-weight: 500; }
+.mo-obj__ready-title span { color: var(--mo-amber); font-size: 11px; }
+.mo-obj__ready.is-ready .mo-obj__ready-title span { color: var(--mo-green); }
+.mo-obj__ready-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
+.mo-obj__ready-list li { display: grid; grid-template-columns: 18px auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 13px; }
+.mo-obj__ready-mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; }
+.mo-obj__ready-list .is-ok .mo-obj__ready-mark { background: rgba(93, 255, 176, 0.18); color: var(--mo-green); }
+.mo-obj__ready-list .is-bad .mo-obj__ready-mark { background: rgba(255, 184, 77, 0.2); color: var(--mo-amber); }
+.mo-obj__ready-label { font-family: var(--mo-font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mo-dim); }
+.mo-obj__ready-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; color: var(--mo-text); }
+.mo-obj__ready-stats { margin: 0; font-family: var(--mo-font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--mo-faint); }
+.mo-obj__ready .mo-obj__info { justify-self: start; padding-left: 0; }
+@media (max-width: 520px) { .mo-obj__ready-list { grid-template-columns: minmax(0, 1fr); } }
