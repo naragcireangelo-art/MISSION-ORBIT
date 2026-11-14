@@ -16,6 +16,7 @@
  */
 
 import { Howl, Howler, type HowlOptions } from 'howler';
+import { FlightMusic, type Tier } from './flightMusic';
 
 export type SfxId =
   | 'scanTick' // AUD-02 correct character in a scan
@@ -233,17 +234,6 @@ const SFX: Record<SfxId, SfxDef> = {
   uiTick: { files: sfxFiles('ui-tick'), volume: 0.6, jitter: 0, recipe: RECIPES.uiTick },
 };
 
-// --- Synth ambient music -----------------------------------------------------------
-
-interface SynthMusic {
-  bus: GainNode;
-  intensityGain: GainNode;
-  oscillators: OscillatorNode[];
-  pluckTimer: ReturnType<typeof setInterval>;
-}
-
-const PLUCK_NOTES = [220, 261.63, 293.66, 329.63, 392];
-
 // --- The manager ---------------------------------------------------------------------
 
 type Listener = () => void;
@@ -263,7 +253,10 @@ export class AudioManager {
   private musicIntense: Howl | null = null;
   private musicFileOk = false;
   private musicIntenseFileOk = false;
-  private synthMusic: SynthMusic | null = null;
+  /** The procedural gameplay score (the "Pulse" pick from the Sound Lab). */
+  private flightMusic: FlightMusic | null = null;
+  private musicTier: Tier = 2;
+  private musicScan = false;
   private preloadPromise: Promise<void> | null = null;
 
   private voices = 0;
@@ -489,10 +482,21 @@ export class AudioManager {
     const value = clamp01(intensity);
     if (Math.abs(value - this.snapshot.intensity) < 0.01) return;
     this.update({ intensity: value });
-    if (this.synthMusic && this.ctx) {
-      this.synthMusic.intensityGain.gain.setTargetAtTime(value * 0.14, this.ctx.currentTime, 0.6);
-    }
+    this.flightMusic?.setParams({ intensity: value });
     this.applyLevels();
+  }
+
+  /** Difficulty tier of the level (1-4). Sets the music tempo, 84 to 110 BPM. */
+  setMusicTier(tier: 1 | 2 | 3 | 4): void {
+    this.musicTier = tier;
+    this.flightMusic?.setParams({ tier });
+  }
+
+  /** The slow-motion scan phase: the music darkens, drops to half-time and sags in pitch. */
+  setScanMode(scan: boolean): void {
+    if (scan === this.musicScan) return;
+    this.musicScan = scan;
+    this.flightMusic?.setParams({ scan });
   }
 
   /** Lowers the music by 6 dB for 1 s (used under the scan-complete chime). */
@@ -511,84 +515,20 @@ export class AudioManager {
   private startSynthMusic(fadeMs: number): void {
     const ctx = this.ctx;
     const musicBus = this.musicBus;
-    if (!ctx || !musicBus || this.synthMusic) return;
-
-    const bus = ctx.createGain();
-    bus.gain.setValueAtTime(0.0001, ctx.currentTime);
-    bus.gain.linearRampToValueAtTime(1, ctx.currentTime + fadeMs / 1000);
-    bus.connect(musicBus);
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.Q.value = 0.7;
-    filter.frequency.value = 520;
-    filter.connect(bus);
-
-    const oscillators: OscillatorNode[] = [];
-    const addPad = (freq: number, detune: number, level: number, type: OscillatorType, dest: AudioNode): void => {
-      const osc = ctx.createOscillator();
-      osc.type = type;
-      osc.frequency.value = freq;
-      osc.detune.value = detune;
-      const g = ctx.createGain();
-      g.gain.value = level;
-      osc.connect(g);
-      g.connect(dest);
-      osc.start();
-      oscillators.push(osc);
-    };
-
-    [
-      [55, -6], [55, 6], [82.41, 4], [110, -5], [164.81, 3],
-    ].forEach(([freq, detune]) => addPad(freq, detune, 0.1, 'sawtooth', filter));
-
-    // Slow filter sweep.
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.06;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 260;
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
-    lfo.start();
-    oscillators.push(lfo);
-
-    // Intensity layer: brighter triads, silent until setIntensity() raises it.
-    const intensityGain = ctx.createGain();
-    intensityGain.gain.value = this.snapshot.intensity * 0.14;
-    intensityGain.connect(bus);
-    [220, 329.63, 440].forEach((freq) => addPad(freq, 0, 0.5, 'triangle', intensityGain));
-
-    // Soft plucks over the pad.
-    const pluck = (): void => {
-      if (!this.synthMusic || !this.ctx) return;
-      const note = PLUCK_NOTES[Math.floor(Math.random() * PLUCK_NOTES.length)];
-      tone(this.ctx, this.synthMusic.bus, { f0: note, dur: 2.4, peak: 0.05, attack: 0.05 });
-    };
-    const pluckTimer = setInterval(pluck, 3200);
-
-    this.synthMusic = { bus, intensityGain, oscillators, pluckTimer };
+    if (!ctx || !musicBus || this.flightMusic) return;
+    const music = new FlightMusic(ctx, musicBus, 'pulse', {
+      intensity: this.snapshot.intensity,
+      scan: this.musicScan,
+      tier: this.musicTier,
+    });
+    music.start(fadeMs / 1000);
+    this.flightMusic = music;
     this.applyLevels();
   }
 
   private stopSynthMusic(fadeMs: number): void {
-    const ctx = this.ctx;
-    const synth = this.synthMusic;
-    if (!ctx || !synth) return;
-    clearInterval(synth.pluckTimer);
-    synth.bus.gain.cancelScheduledValues(ctx.currentTime);
-    synth.bus.gain.setValueAtTime(synth.bus.gain.value, ctx.currentTime);
-    synth.bus.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + fadeMs / 1000);
-    this.synthMusic = null;
-    setTimeout(() => {
-      synth.oscillators.forEach((o) => {
-        try {
-          o.stop();
-        } catch {
-          // Already stopped.
-        }
-      });
-      synth.bus.disconnect();
-    }, fadeMs + 100);
+    this.flightMusic?.stop(fadeMs / 1000);
+    this.flightMusic = null;
   }
 
   // --- Sound effects --------------------------------------------------------------------

@@ -66,7 +66,7 @@ export function ObjectivesScreen() {
       uiAudio.sfx.denied();
       return;
     }
-    uiAudio.sfx.confirm();
+    uiAudio.sfx.launch();
     setScreen('explore');
   };
 

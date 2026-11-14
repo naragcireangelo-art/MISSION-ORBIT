@@ -69,7 +69,7 @@ export function MissionDossierCard({
       timer.current = window.setTimeout(() => setDenied(false), 520);
       return;
     }
-    uiAudio.sfx.confirm();
+    uiAudio.sfx.select();
     onOpen(mission);
   };
 

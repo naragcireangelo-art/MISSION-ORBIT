@@ -73,7 +73,7 @@ export function AssemblyScreen() {
       uiAudio.sfx.denied();
       return;
     }
-    uiAudio.sfx.confirm();
+    uiAudio.sfx.next();
     setScreen(NEXT_AFTER_ASSEMBLY);
   };
 

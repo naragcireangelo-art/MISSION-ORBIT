@@ -27,6 +27,7 @@ npm run dev        # http://localhost:5173
 Dev-only URL switches (ignored in production builds):
 
 - `?unlock-all` opens every level in the Mission Archive.
+- `?sound-lab` opens a page for auditioning sound-effect and music candidates (not part of the game).
 
 ## How to play
 
