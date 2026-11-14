@@ -28,6 +28,7 @@ import { FlightSim } from '../engine/flightSim';
 import { GAMEPLAY } from '../engine/flightTypes';
 import { FIXED_DT, GameLoop } from '../engine/gameLoop';
 import { InputRouter, ScanTelemetry } from '../engine/inputRouter';
+import { NO_STAGGER, computeStagger } from '../engine/stagger';
 import { uiAudio } from '../engine/uiAudio';
 import { useAssemblyStore } from '../store/useAssemblyStore';
 import { useGameStore } from '../store/useGameStore';
@@ -119,6 +120,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
   const backRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const planetRef = useRef<HTMLDivElement | null>(null);
+  const worldRef = useRef<HTMLDivElement | null>(null);
   const simRef = useRef<FlightSim | null>(null);
 
   useEffect(() => {
@@ -170,6 +172,11 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     // ── Visual state that is not part of the rules ────────────────────────────
     let scroll = 0; // seconds of flight, advances with game time so stars slow in a scan
     let hitFlash = 0;
+    // Hit reaction (stagger.ts): seconds since the last hit, how hard it was, and whether the world is
+    // currently displaced by the screen shake (so it is reset exactly once when the shake ends).
+    let staggerAge = Infinity;
+    let staggerPower = 1;
+    let shaking = false;
     let lastTargetId: string | null = null;
     let sinceHud = 0;
     let ended = false;
@@ -239,6 +246,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
           if (Math.abs(aspect - sim.aspect) > 0.01) sim.setAspect(aspect);
           if (!reducedRef.current) scroll += step.dt;
           hitFlash = Math.max(0, hitFlash - step.realDt * 1.8);
+          staggerAge += step.realDt;
           for (const sp of sparks) {
             sp.age += step.realDt;
             sp.x += sp.vx * step.realDt;
@@ -268,6 +276,8 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
               case 'hit':
                 audioManager.hullHit();
                 hitFlash = 1;
+                staggerAge = 0;
+                staggerPower = e.hull === 0 ? 1.6 : 1; // the hit that destroys the ship lands harder
                 setHull(e.hull);
                 burst(sim.ship.x, sim.ship.y, e.hull === 0 ? 46 : 14, e.hull === 0 ? 0.55 : 0.32);
                 if (e.hull === 0 && !reducedRef.current) shocks.push({ x: sim.ship.x, y: sim.ship.y, age: 0 });
@@ -339,6 +349,25 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
 
     // ── Layers (drawn every frame) ────────────────────────────────────────────
     const offLayers = [
+      // The screen shake moves the whole game world (stars, planet, rocks, ship) with one CSS transform.
+      // The HUD sits outside it, so its text stays readable.
+      loop.addLayer(
+        'shake',
+        (f) => {
+          const el = worldRef.current;
+          if (!el) return;
+          const st = reducedRef.current || pausedRef.current ? NO_STAGGER : computeStagger(staggerAge, staggerPower);
+          const moving = st.shakeX !== 0 || st.shakeY !== 0;
+          if (moving) {
+            el.style.transform = `translate(${(st.shakeX * 0.016 * f.height).toFixed(2)}px, ${(st.shakeY * 0.016 * f.height).toFixed(2)}px)`;
+            shaking = true;
+          } else if (shaking) {
+            el.style.transform = '';
+            shaking = false;
+          }
+        },
+        -1,
+      ),
       loop.addLayer(
         'backdrop',
         (f) => {
@@ -389,14 +418,17 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
           let alpha = 1;
           if (s.invuln > 0) alpha = Math.floor(f.realTime * 14) % 2 === 0 ? 0.35 : 1;
           if (dying) alpha = Math.max(0.15, 0.6 - 0.5 * Math.abs(Math.sin(f.realTime * 12)));
+          // The hit reaction is drawn only: the ship staggers on screen but its real position, and so every
+          // collision, is untouched. Off when the player asked for reduced motion.
+          const st = reducedRef.current ? NO_STAGGER : computeStagger(staggerAge, staggerPower);
           drawSatellite(f.ctx, parts, {
-            x: (s.x + s.vx * k) * f.height,
-            y: (s.y + s.vy * k) * f.height,
+            x: (s.x + s.vx * k + st.shipX * 0.016) * f.height,
+            y: (s.y + s.vy * k + st.shipY * 0.016) * f.height,
             scale: GAMEPLAY.SHIP_UNIT * f.height,
             t: f.realTime,
             thrust: dying ? 0 : 0.45 + 0.4 * Math.min(1, speed),
             beam: router.isMovementLocked(),
-            rotation: clamp(s.vy / Math.max(0.01, stats.moveSpeed), -1, 1) * 0.12,
+            rotation: clamp(s.vy / Math.max(0.01, stats.moveSpeed), -1, 1) * 0.12 + st.rot * 0.16,
             alpha,
           });
         },
@@ -564,11 +596,13 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
   return (
     <section className="mo-screen mo-explore">
       <div ref={stageRef} className="mo-explore__stage">
-        <canvas ref={backRef} className="mo-explore__back" aria-hidden="true" />
-        <div ref={planetRef} className="mo-explore__planet" aria-hidden="true">
-          {target ? <BodyPortrait art={target.art} size={planetPx} /> : null}
+        <div ref={worldRef} className="mo-explore__world">
+          <canvas ref={backRef} className="mo-explore__back" aria-hidden="true" />
+          <div ref={planetRef} className="mo-explore__planet" aria-hidden="true">
+            {target ? <BodyPortrait art={target.art} size={planetPx} /> : null}
+          </div>
+          <canvas ref={canvasRef} className="mo-explore__canvas" role="img" aria-label="Flight view" />
         </div>
-        <canvas ref={canvasRef} className="mo-explore__canvas" role="img" aria-label="Flight view" />
         <MissionHud
           router={router}
           telemetry={telemetry}

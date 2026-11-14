@@ -44,7 +44,7 @@ export function computeStagger(age: number, power = 1): Stagger {
     shipX: power * (recoil * 1.5 + Math.sin(age * 62) * 0.55 * settle * snap),
     shipY: power * Math.cos(age * 51) * 0.8 * settle * snap,
     rot: power * Math.sin(age * 40 + 0.9) * 0.9 * settle * snap,
-    shakeX: power * Math.sin(age * 83) * k * k * k,
-    shakeY: power * Math.cos(age * 71 + 0.5) * k * k * k,
+    shakeX: power * Math.sin(age * 83) * k * k,
+    shakeY: power * Math.cos(age * 71 + 0.5) * k * k,
   };
 }
