@@ -10,6 +10,7 @@
 
 import type { ReactNode } from 'react';
 import { MissionControlFrame } from './components/ui/MissionControlFrame';
+import { AssemblyScreen } from './screens/AssemblyScreen';
 import { MissionArchiveScreen } from './screens/MissionArchiveScreen';
 import { ObjectivesScreen } from './screens/ObjectivesScreen';
 import { SplashScreen } from './screens/SplashScreen';
@@ -42,6 +43,9 @@ export default function App() {
   switch (screen) {
     case 'archive':
       content = <MissionArchiveScreen />;
+      break;
+    case 'assembly':
+      content = <AssemblyScreen />;
       break;
     case 'objectives':
       content = <ObjectivesScreen />;
