@@ -10,6 +10,7 @@
  */
 
 import { noise, tone, withReverb, type Ctx } from '../../engine/synthKit';
+import { launchRaw, missionSelectRaw, nextStepRaw } from '../../engine/uiSounds';
 
 export type VoiceGroup = 'select' | 'step' | 'launch';
 
@@ -64,13 +65,7 @@ export const VOICES: readonly Voice[] = [
     name: 'B · Launch commit',
     blurb: 'A short rising sweep into a clear D5 + A5 chime. Reads as "mission selected".',
     duration: 1.3,
-    play: (ctx, dest, t0) =>
-      withReverb(ctx, dest, 0.35, (out) => {
-        noise(ctx, out, { t0, dur: 0.38, peak: 0.09, filter: 'bandpass', f0: 300, f1: 2600, q: 1.2, attack: 0.15 });
-        tone(ctx, out, { t0, dur: 0.38, peak: 0.05, f0: 220, f1: 440, attack: 0.12 });
-        tone(ctx, out, { t0: t0 + 0.34, dur: 0.8, peak: 0.07, f0: D5 });
-        tone(ctx, out, { t0: t0 + 0.34, dur: 0.7, peak: 0.05, f0: A5 });
-      }),
+    play: (ctx, dest, t0) => missionSelectRaw(ctx, dest, t0),
   },
   {
     id: 'select-c',
@@ -125,10 +120,7 @@ export const VOICES: readonly Voice[] = [
     name: '2 · Two-tone',
     blurb: 'D5 then A5, tight and clean.',
     duration: 0.35,
-    play: (ctx, dest, t0) => {
-      tone(ctx, dest, { t0, dur: 0.12, peak: 0.06, f0: D5 });
-      tone(ctx, dest, { t0: t0 + 0.07, dur: 0.16, peak: 0.06, f0: A5 });
-    },
+    play: (ctx, dest, t0) => nextStepRaw(ctx, dest, t0),
   },
   {
     id: 'step-3',
@@ -149,13 +141,7 @@ export const VOICES: readonly Voice[] = [
     name: 'L1 · Short warp',
     blurb: 'A rising whoosh with a deep swell, ending in a D5 + A5 chime. A shorter cousin of the splash warp.',
     duration: 1.6,
-    play: (ctx, dest, t0) =>
-      withReverb(ctx, dest, 0.3, (out) => {
-        noise(ctx, out, { t0, dur: 0.75, peak: 0.13, filter: 'bandpass', f0: 180, f1: 4200, q: 1.4, attack: 0.3 });
-        tone(ctx, out, { t0, dur: 0.7, peak: 0.08, f0: 55, f1: 165, type: 'triangle', attack: 0.25 });
-        tone(ctx, out, { t0: t0 + 0.55, dur: 0.9, peak: 0.05, f0: D5 });
-        tone(ctx, out, { t0: t0 + 0.55, dur: 0.8, peak: 0.04, f0: A5 });
-      }),
+    play: (ctx, dest, t0) => launchRaw(ctx, dest, t0),
   },
   {
     id: 'launch-2',

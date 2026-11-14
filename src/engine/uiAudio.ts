@@ -11,9 +11,13 @@
  *   uiAudio.sfx.confirm()      rising two-note chime    uiAudio.sfx.denied()  low buzz
  *   uiAudio.sfx.warp()         launch whoosh            uiAudio.sfx.type()    transmission tick
  *   uiAudio.sfx.open()         panel-open sweep
+ *   uiAudio.sfx.select()       mission picked in the Archive      uiAudio.sfx.next()   Continue / Next
+ *   uiAudio.sfx.launch()       Play on the Objectives screen (see uiSounds.ts)
  *
  * If Ci's audioManager.ts is added later, fold these into it; this file has no dependencies.
  */
+
+import { playUiSound, type UiSoundKind } from './uiSounds';
 
 type AudioContextCtor = typeof AudioContext;
 
@@ -42,6 +46,7 @@ class UiAudio {
   private chordTimer: number | null = null;
   private shimmerTimer: number | null = null;
   private started = false;
+  private suspendTimer: number | null = null;
   private lastTypeAt = 0;
   private lastHoverAt = 0;
 
@@ -59,6 +64,10 @@ class UiAudio {
       }
       const ctx = this.ctx;
       if (!ctx) return;
+      if (this.suspendTimer !== null) {
+        window.clearTimeout(this.suspendTimer);
+        this.suspendTimer = null;
+      }
       if (ctx.state === 'suspended') void ctx.resume();
       if (this.started) return;
       this.started = true;
@@ -83,13 +92,35 @@ class UiAudio {
     return this.started;
   }
 
+  /**
+   * Stop the ambient soundtrack. It fades out over about half a second, and the audio context is only
+   * suspended once any sound effect still playing (the launch sound runs about 1.6 s) has finished.
+   */
   stop(): void {
     if (this.chordTimer !== null) window.clearInterval(this.chordTimer);
     if (this.shimmerTimer !== null) window.clearInterval(this.shimmerTimer);
     this.chordTimer = null;
     this.shimmerTimer = null;
     this.started = false;
-    if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend();
+    if (this.ctx && this.ambientBus) {
+      const t = this.ctx.currentTime;
+      this.ambientBus.gain.cancelScheduledValues(t);
+      this.ambientBus.gain.setValueAtTime(this.ambientBus.gain.value, t);
+      this.ambientBus.gain.linearRampToValueAtTime(0, t + 0.6);
+    }
+    if (this.suspendTimer !== null) window.clearTimeout(this.suspendTimer);
+    this.suspendTimer = window.setTimeout(() => {
+      this.suspendTimer = null;
+      if (!this.started && this.ctx && this.ctx.state === 'running') void this.ctx.suspend();
+    }, 2600);
+  }
+
+  /** Play one of the level-matched journey sounds from uiSounds.ts. */
+  private playJourney(kind: UiSoundKind): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master || this.muted) return;
+    if (ctx.state === 'suspended') void ctx.resume();
+    playUiSound(kind, ctx, this.master, ctx.currentTime + 0.01);
   }
 
   // ── Graph ──────────────────────────────────────────────────────────────────
@@ -290,6 +321,9 @@ class UiAudio {
       this.lastTypeAt = now;
       this.tone({ freq: 1400 + Math.random() * 500, type: 'square', duration: 0.018, gain: 0.012 });
     },
+    select: (): void => this.playJourney('select'),
+    next: (): void => this.playJourney('next'),
+    launch: (): void => this.playJourney('launch'),
     open: (): void => {
       this.noiseSweep(0.45, 400, 3200, 0.07);
       this.tone({ freq: 440, toFreq: 880, type: 'sine', duration: 0.3, gain: 0.04, reverb: 0.4 });
