@@ -17,13 +17,13 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  loadPlanetTexture,
   smoothstep,
   SPHERE_STYLES,
   type PlanetStyle,
   type PlanetTexture,
   type SphereArtId,
 } from './planetTextures';
+import { loadPlanetTexture } from './textureLoader';
 import { useReducedMotion } from '../hooks';
 import {
   baseOrientation,
@@ -544,7 +544,7 @@ export function PlanetSphere({
     const start = (loaded: PlanetTexture | null): void => {
       if (cancelled || !loaded) return;
       tex = loaded;
-      geo = buildGeometry(S, style.tilt, style.elevation, interactive);
+      geo = geo ?? buildGeometry(S, style.tilt, style.elevation, interactive);
       if (style.rings && !interactive) {
         const ratio = Math.abs(Math.sin(style.elevation));
         ringBack = renderRingHalf(null, box, dpr, cx, cy, R, style.tilt, ratio, 'back');
@@ -554,8 +554,13 @@ export function PlanetSphere({
       wrap.setAttribute('data-ready', 'true');
       if (!reduced) raf = requestAnimationFrame(frame);
     };
-    // Textures missing from the cache are built one per task, so a screen full of planets
-    // doesn't freeze while they all appear at once.
+    // The geometry does not depend on the texture, so build it now, while the texture is still being
+    // built, instead of in the same task that draws the first frame.
+    const geoTimer = window.setTimeout(() => {
+      if (!cancelled && !geo) geo = buildGeometry(S, style.tilt, style.elevation, interactive);
+    }, 0);
+    // Textures arrive from the worker (or, without one, are built one per task), so a screen full of
+    // planets doesn't freeze while they all appear at once.
     const timer = window.setTimeout(() => {
       if (!cancelled) void loadPlanetTexture(body).then(start);
     }, 0);
@@ -650,6 +655,7 @@ export function PlanetSphere({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      window.clearTimeout(geoTimer);
       cancelAnimationFrame(raf);
       cancelAnimationFrame(oneShot);
       observer?.disconnect();

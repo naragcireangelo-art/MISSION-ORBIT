@@ -15,7 +15,8 @@ import { uiAudio } from '../../engine/uiAudio';
 import { useGameStore } from '../../store/useGameStore';
 import { IconCheck, IconClose, IconCodex, IconCrosshair } from './icons';
 import { BodyPortrait } from './planet/BodyPortrait';
-import { isSphereArt, prewarmTextures } from './planet/planetTextures';
+import { isSphereArt } from './planet/planetTextures';
+import { prewarmTextures } from './planet/textureLoader';
 
 type GroupFilter = CodexGroup | 'all';
 

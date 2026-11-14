@@ -16,7 +16,7 @@ import { CelestialCodexModal } from '../components/ui/CelestialCodexModal';
 import { useReducedMotion, useViewport } from '../components/ui/hooks';
 import { IconCodex, IconMute, IconSound } from '../components/ui/icons';
 import { MissionEmblem } from '../components/ui/MissionEmblem';
-import { prewarmTextures } from '../components/ui/planet/planetTextures';
+import { prewarmTextures } from '../components/ui/planet/textureLoader';
 import { PlanetSphere, type SphereDecorator, type SphereDrawContext } from '../components/ui/planet/PlanetSphere';
 import { SpaceBackdrop } from '../components/ui/SpaceBackdrop';
 import { MISSIONS } from '../data/missions';
@@ -164,6 +164,16 @@ export function SplashScreen() {
       if (readyTimer.current !== null) window.clearTimeout(readyTimer.current);
     };
   }, [reduced]);
+
+  // Build the audio engine while the intro settles (after the Earth has appeared), so pressing Enter
+  // does not have to. If the player is quicker than that, `start()` builds it on demand as before.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => uiAudio.prepare(), { timeout: 1500 });
+      else uiAudio.prepare();
+    }, 3400);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Create the audio engine on the first touch, so the launch click isn't also building it.
   useEffect(() => {
