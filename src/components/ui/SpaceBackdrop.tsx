@@ -268,6 +268,8 @@ export function SpaceBackdrop({
               continue;
             }
           }
+          // Rocks that are off screen cost a gradient fill for nothing.
+          if (r.x + r.size * 1.6 < -40 || r.x - r.size * 1.6 > w + 40) continue;
           drawRock(ctx, r, speed > 0.35 ? 1 : 0);
         }
       }

@@ -1084,6 +1084,45 @@ export function getPlanetTexture(id: SphereArtId): PlanetTexture {
   return tex;
 }
 
+const waiting = new Map<SphereArtId, Array<(t: PlanetTexture | null) => void>>();
+let pumping = false;
+
+/**
+ * Like `getPlanetTexture`, but when several textures are missing (a screen full of planets
+ * mounting at once) they are built one per task, so frames can paint in between instead of one
+ * long freeze. Resolves with null if the build fails.
+ */
+export function loadPlanetTexture(id: SphereArtId): Promise<PlanetTexture | null> {
+  const hit = cache.get(id);
+  if (hit) return Promise.resolve(hit);
+  return new Promise((resolve) => {
+    const list = waiting.get(id);
+    if (list) list.push(resolve);
+    else waiting.set(id, [resolve]);
+    if (pumping) return;
+    pumping = true;
+    const pump = (): void => {
+      const next = waiting.keys().next();
+      if (next.done) {
+        pumping = false;
+        return;
+      }
+      const key = next.value;
+      const done = waiting.get(key) ?? [];
+      waiting.delete(key);
+      let tex: PlanetTexture | null = null;
+      try {
+        tex = getPlanetTexture(key);
+      } catch {
+        tex = null;
+      }
+      for (const cb of done) cb(tex);
+      window.setTimeout(pump, 16);
+    };
+    window.setTimeout(pump, 0);
+  });
+}
+
 /**
  * Builds textures for the given bodies one at a time while the browser is idle, so a later
  * `getPlanetTexture` is an instant cache hit instead of a main-thread stall. Returns a cancel.

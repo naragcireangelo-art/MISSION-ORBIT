@@ -298,6 +298,7 @@ export function SplashScreen() {
               size={earthSize}
               pad={2.5}
               fps={24}
+              paused={stage === 'launching'}
               decorator={decorator}
               startAngle={2.4}
               label="Rotating Earth with satellites in orbit"

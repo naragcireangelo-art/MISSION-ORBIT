@@ -17,7 +17,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  getPlanetTexture,
+  loadPlanetTexture,
   smoothstep,
   SPHERE_STYLES,
   type PlanetStyle,
@@ -75,6 +75,8 @@ export interface PlanetSphereProps {
   label?: string;
   /** Lets the player drag (or use the arrow keys) to turn the planet in any direction. */
   interactive?: boolean;
+  /** Freeze on the current frame (e.g. while the sphere is being zoomed away). */
+  paused?: boolean;
 }
 
 // ── Sphere geometry (computed once per size / tilt) ──────────────────────────
@@ -391,6 +393,7 @@ export function PlanetSphere({
   className,
   label,
   interactive = false,
+  paused = false,
 }: PlanetSphereProps) {
   const style = SPHERE_STYLES[body];
   const boxScale = pad ?? (style.rings ? 2.6 : 1);
@@ -399,6 +402,8 @@ export function PlanetSphere({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const decoratorRef = useRef<SphereDecorator | undefined>(decorator);
   decoratorRef.current = decorator;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -512,7 +517,7 @@ export function PlanetSphere({
     const frame = (now: number): void => {
       if (cancelled) return;
       raf = requestAnimationFrame(frame);
-      if (!visible || document.hidden) return;
+      if (!visible || document.hidden || pausedRef.current) return;
       if (!immediate && (now - last < 1000 / fps || now - lastScrollAt < SCROLL_QUIET_MS)) return;
       immediate = false;
       last = now;
@@ -536,13 +541,9 @@ export function PlanetSphere({
     trackScroll();
 
     // Build the texture a moment after mount so the first paint is never blocked.
-    const timer = window.setTimeout(() => {
-      if (cancelled) return;
-      try {
-        tex = getPlanetTexture(body);
-      } catch {
-        return;
-      }
+    const start = (loaded: PlanetTexture | null): void => {
+      if (cancelled || !loaded) return;
+      tex = loaded;
       geo = buildGeometry(S, style.tilt, style.elevation, interactive);
       if (style.rings && !interactive) {
         const ratio = Math.abs(Math.sin(style.elevation));
@@ -552,6 +553,11 @@ export function PlanetSphere({
       draw(performance.now());
       wrap.setAttribute('data-ready', 'true');
       if (!reduced) raf = requestAnimationFrame(frame);
+    };
+    // Textures missing from the cache are built one per task, so a screen full of planets
+    // doesn't freeze while they all appear at once.
+    const timer = window.setTimeout(() => {
+      if (!cancelled) void loadPlanetTexture(body).then(start);
     }, 0);
 
     const observer =
