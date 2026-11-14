@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { drawAsteroid, drawSatellite, drawStarfield } from '../art';
 import { BodyPortrait } from '../components/ui/planet/BodyPortrait';
-import { bodyArt } from '../components/flight/bodyLookup';
+import { bodyArt, findBody } from '../components/flight/bodyLookup';
 import { MissionHud } from '../components/flight/MissionHud';
 import { ScanReticle } from '../components/flight/ScanReticle';
 import { ScanSideToast } from '../components/flight/ScanSideToast';
@@ -49,6 +49,18 @@ interface Popup {
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
+/** The one-time tip about the steering lock is shown on the player's first flight only. */
+const HINT_KEY = 'mission-orbit:seen-scan-hint';
+function takeFirstRunHint(): boolean {
+  try {
+    if (window.localStorage.getItem(HINT_KEY)) return false;
+    window.localStorage.setItem(HINT_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Restarting remounts the flight with a fresh sim, router and clocks (same build, same mission). */
 export function ExploreScreen() {
   const [run, setRun] = useState(0);
@@ -76,6 +88,9 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
   const [target, setTarget] = useState<TargetView | null>(null);
   const [stageH, setStageH] = useState(700);
   const [paused, setPaused] = useState(false);
+  const [intro, setIntro] = useState(true);
+  const [showHint] = useState(takeFirstRunHint);
+  const [incoming, setIncoming] = useState<{ label: string; seq: number } | null>(null);
 
   const loopRef = useRef<GameLoop | null>(null);
   const resumeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -195,6 +210,12 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
           const events = sim.step(step.dt, step.realDt, { move: router.getMovement(), phase: router.getPhase() });
           for (const e of events) {
             switch (e.type) {
+              case 'targetSpawned': {
+                const unknown = (mission.hiddenTargetIds ?? []).includes(e.id);
+                const label = unknown ? 'Unknown object' : (findBody(e.id)?.name ?? e.id);
+                setIncoming((prev) => ({ label, seq: (prev?.seq ?? 0) + 1 }));
+                break;
+              }
               case 'scanTrigger':
                 router.beginScan(e.name);
                 audioManager.scanLock();
@@ -207,7 +228,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
               case 'nearMiss':
                 audioManager.nearMiss(e.pan);
                 setNearMisses(sim.nearMisses);
-                popups.push({ text: 'NEAR MISS', x: sim.ship.x, y: sim.ship.y - 0.12, age: 0 });
+                popups.push({ text: 'NEAR MISS', x: sim.ship.x + 0.12, y: sim.ship.y - 0.08, age: 0 });
                 break;
               case 'hullCritical':
                 audioManager.startAlarm();
@@ -447,6 +468,17 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     if (paused) resumeBtnRef.current?.focus();
   }, [paused]);
 
+  // The level intro fades out on its own; the "approaching" banner clears itself too.
+  useEffect(() => {
+    const id = window.setTimeout(() => setIntro(false), showHint ? 6500 : 3800);
+    return () => window.clearTimeout(id);
+  }, [showHint]);
+  useEffect(() => {
+    if (!incoming) return;
+    const id = window.setTimeout(() => setIncoming(null), 3200);
+    return () => window.clearTimeout(id);
+  }, [incoming]);
+
   const getAnchor = () => {
     const t = simRef.current?.target;
     const stage = stageRef.current;
@@ -478,6 +510,25 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
         <ScanReticle router={router} getAnchor={getAnchor} />
         <ScanSideToast router={router} />
         {!paused && <p className="mo-explore__hint">ESC · PAUSE</p>}
+        {intro && !paused && (
+          <div className="mo-explore__intro" aria-live="polite" style={{ animationDuration: showHint ? '6.5s' : '3.8s' }}>
+            <p className="mo-eyebrow">
+              {mission.code} · {mission.spacecraft}
+            </p>
+            <p className="mo-explore__intro-title">{mission.objectiveHeadline}</p>
+            <p className="mo-explore__intro-line">Dodge the asteroids. Scan each world by typing its name.</p>
+            {showHint && (
+              <p className="mo-explore__intro-tip">
+                When a world locks on, time slows and steering freezes: that is your cue to type.
+              </p>
+            )}
+          </div>
+        )}
+        {incoming && !paused && !intro && (
+          <p key={incoming.seq} className="mo-explore__incoming" aria-live="polite">
+            {incoming.label} approaching
+          </p>
+        )}
         {paused && (
           <div className="mo-pause" role="dialog" aria-modal="true" aria-labelledby="mo-pause-title">
             <div className="mo-pause__card">
