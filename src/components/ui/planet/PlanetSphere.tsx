@@ -17,13 +17,13 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  loadPlanetTexture,
   smoothstep,
   SPHERE_STYLES,
   type PlanetStyle,
   type PlanetTexture,
   type SphereArtId,
 } from './planetTextures';
+import { loadPlanetTexture } from './textureLoader';
 import { useReducedMotion } from '../hooks';
 import {
   baseOrientation,

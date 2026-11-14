@@ -154,8 +154,14 @@ function fbm(x: number, y: number, fx: number, fy: number, octaves: number, seed
   return sum / total;
 }
 
+/**
+ * A canvas for drawing a texture. Inside a Web Worker there is no `document`, so an OffscreenCanvas is
+ * used; the 2D calls in this file are the same on both, so it is typed as the DOM canvas.
+ */
 function makeCanvas(w: number, h: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
-  const canvas = document.createElement('canvas');
+  const canvas = (
+    typeof document === 'undefined' ? new OffscreenCanvas(w, h) : document.createElement('canvas')
+  ) as HTMLCanvasElement;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -1075,86 +1081,28 @@ function buildTexture(id: SphereArtId): PlanetTexture {
 
 const cache = new Map<SphereArtId, PlanetTexture>();
 
-/** Build (once) and return the texture for a sphere body. */
+/** Build a texture without caching it. The texture worker runs this (see textureLoader.ts). */
+export function buildPlanetTexture(id: SphereArtId): PlanetTexture {
+  return buildTexture(id);
+}
+
+/** The cached texture, or undefined if it has not been built yet. */
+export function peekPlanetTexture(id: SphereArtId): PlanetTexture | undefined {
+  return cache.get(id);
+}
+
+/** Store a texture that was built elsewhere (the worker) so later lookups are instant. */
+export function cachePlanetTexture(id: SphereArtId, tex: PlanetTexture): void {
+  cache.set(id, tex);
+}
+
+/** Build (once) and return the texture for a sphere body, on the calling thread. */
 export function getPlanetTexture(id: SphereArtId): PlanetTexture {
   const hit = cache.get(id);
   if (hit) return hit;
   const tex = buildTexture(id);
   cache.set(id, tex);
   return tex;
-}
-
-const waiting = new Map<SphereArtId, Array<(t: PlanetTexture | null) => void>>();
-let pumping = false;
-
-/**
- * Like `getPlanetTexture`, but when several textures are missing (a screen full of planets
- * mounting at once) they are built one per task, so frames can paint in between instead of one
- * long freeze. Resolves with null if the build fails.
- */
-export function loadPlanetTexture(id: SphereArtId): Promise<PlanetTexture | null> {
-  const hit = cache.get(id);
-  if (hit) return Promise.resolve(hit);
-  return new Promise((resolve) => {
-    const list = waiting.get(id);
-    if (list) list.push(resolve);
-    else waiting.set(id, [resolve]);
-    if (pumping) return;
-    pumping = true;
-    const pump = (): void => {
-      const next = waiting.keys().next();
-      if (next.done) {
-        pumping = false;
-        return;
-      }
-      const key = next.value;
-      const done = waiting.get(key) ?? [];
-      waiting.delete(key);
-      let tex: PlanetTexture | null = null;
-      try {
-        tex = getPlanetTexture(key);
-      } catch {
-        tex = null;
-      }
-      for (const cb of done) cb(tex);
-      window.setTimeout(pump, 16);
-    };
-    window.setTimeout(pump, 0);
-  });
-}
-
-/**
- * Builds textures for the given bodies one at a time while the browser is idle, so a later
- * `getPlanetTexture` is an instant cache hit instead of a main-thread stall. Returns a cancel.
- */
-export function prewarmTextures(ids: readonly SphereArtId[] = Object.keys(SPHERE_STYLES) as SphereArtId[]): () => void {
-  const queue = ids.filter((id) => !cache.has(id));
-  let cancelled = false;
-  let handle = 0;
-  const schedule = (fn: () => void): void => {
-    if (typeof window.requestIdleCallback === 'function') {
-      handle = window.requestIdleCallback(fn, { timeout: 3000 });
-    } else {
-      handle = window.setTimeout(fn, 120);
-    }
-  };
-  const next = (): void => {
-    if (cancelled) return;
-    const id = queue.shift();
-    if (!id) return;
-    try {
-      getPlanetTexture(id);
-    } catch {
-      // A body that fails to build is simply built (and handled) when it is first drawn.
-    }
-    schedule(next);
-  };
-  schedule(next);
-  return () => {
-    cancelled = true;
-    if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(handle);
-    window.clearTimeout(handle);
-  };
 }
 
 // Exposed for components that need the same colour maths.

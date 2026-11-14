@@ -16,7 +16,7 @@ import { CelestialCodexModal } from '../components/ui/CelestialCodexModal';
 import { useReducedMotion, useViewport } from '../components/ui/hooks';
 import { IconCodex, IconMute, IconSound } from '../components/ui/icons';
 import { MissionEmblem } from '../components/ui/MissionEmblem';
-import { prewarmTextures } from '../components/ui/planet/planetTextures';
+import { prewarmTextures } from '../components/ui/planet/textureLoader';
 import { PlanetSphere, type SphereDecorator, type SphereDrawContext } from '../components/ui/planet/PlanetSphere';
 import { SpaceBackdrop } from '../components/ui/SpaceBackdrop';
 import { MISSIONS } from '../data/missions';
