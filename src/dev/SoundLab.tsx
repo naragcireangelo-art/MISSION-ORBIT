@@ -226,7 +226,8 @@ export function SoundLab() {
         <h1>Sound lab</h1>
         <p>
           Click ▶ to hear each candidate, <b>Pick</b> your favourites, then <b>Copy my picks</b> and send them back.
-          Everything is synthesized live; nothing here is part of the game.
+          Everything is synthesized live. Already in the game: Mission select B, Next step 2, Launch L1 and the Pulse music;
+          the rest are kept here for comparison.
         </p>
         <div className="lab__bar">
           <label>

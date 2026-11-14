@@ -45,7 +45,7 @@ Every wave keeps a free lane open, and the lane only moves as far as the **slowe
 - **Intro and banners.** Each flight opens with a short level intro (the first flight ever adds a one-time tip about the steering lock). When a target appears a banner announces it ("Venus approaching"; hidden targets read "Unknown object").
 - **Pause.** `Esc` opens the pause menu (Resume, Restart mission, Quit to Archive). Losing window focus pauses automatically. While paused the loop is frozen and the input router is detached, so typed letters cannot advance a scan behind the menu.
 - **Feedback.** A hit flashes the screen red and throws sparks; losing the last hull point adds a shockwave. With reduced motion on, the flash is gentler and the sparks, shockwave and star drift are off.
-- **Audio.** The flight swaps the menu synth for `audioManager`: ambient music whose intensity follows how crowded the field is, scan and hit sounds, a hull-1 alarm, and the header's mute button stays in sync. Pausing pauses the music.
+- **Audio.** Chosen in the Sound Lab and all synthesized. Menu sounds (`src/engine/uiSounds.ts`): picking a mission is "Launch commit", Continue / Next is "Two-tone", and Play is "Short warp", each level-matched to the old chime. The flight swaps the menu synth for the "Pulse" score (`src/engine/flightMusic.ts`, D minor like the menu music): tempo follows the level's tier (84 to 110 BPM), kick and hats join as the field gets crowded, and during a scan it drops to half-time, darkens and sags in pitch with the slow motion. Scan and hit sounds, the hull-1 alarm and the header's mute button are wired through `audioManager`; pausing pauses the music.
 
 ## Part balance
 
