@@ -4,16 +4,23 @@
  *   Splash → Archive (all levels) → Objectives (the chosen level) → Play → Explore (gameplay)
  *
  * Splash runs on its own; the other screens sit inside the slim Mission Control frame.
- * Explore, Complete, Lost and Outro belong to teammates. Until they land, a small placeholder
- * keeps the flow clickable. Replace each placeholder with the real screen.
+ * Explore belongs to a teammate. Until it lands, a small placeholder keeps the flow clickable.
+ * Dev only: open with `?hud-preview` to replace the Explore placeholder with a HUD test stage.
  */
 
 import type { ReactNode } from 'react';
+import { FlightHudPreview } from './components/flight/FlightHudPreview';
 import { MissionControlFrame } from './components/ui/MissionControlFrame';
 import { MissionArchiveScreen } from './screens/MissionArchiveScreen';
+import { MissionCompleteScreen } from './screens/MissionCompleteScreen';
 import { ObjectivesScreen } from './screens/ObjectivesScreen';
+import { OutroScreen } from './screens/OutroScreen';
+import { SignalLostScreen } from './screens/SignalLostScreen';
 import { SplashScreen } from './screens/SplashScreen';
 import { useGameStore, type ScreenId } from './store/useGameStore';
+
+const HUD_PREVIEW = import.meta.env.DEV && new URLSearchParams(window.location.search).has('hud-preview');
+if (HUD_PREVIEW) useGameStore.setState({ currentScreen: 'explore' });
 
 function Placeholder({ screen }: { screen: ScreenId }) {
   const setScreen = useGameStore((s) => s.setScreen);
@@ -45,6 +52,18 @@ export default function App() {
       break;
     case 'objectives':
       content = <ObjectivesScreen />;
+      break;
+    case 'explore':
+      content = HUD_PREVIEW ? <FlightHudPreview /> : <Placeholder screen={screen} />;
+      break;
+    case 'complete':
+      content = <MissionCompleteScreen />;
+      break;
+    case 'lost':
+      content = <SignalLostScreen />;
+      break;
+    case 'outro':
+      content = <OutroScreen />;
       break;
     default:
       content = <Placeholder screen={screen} />;
