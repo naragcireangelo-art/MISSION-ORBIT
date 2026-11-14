@@ -2,7 +2,7 @@
 
 Owner: Rhian
 
-These two files run the Explore screen. They import nothing from the rest of the project, so other modules plug into them using the functions below.
+These two files run the Explore screen. (The finished wiring is `src/screens/ExploreScreen.tsx`, and the rules of a flight are in `GAMEPLAY.md`.) They import nothing from the rest of the project, so other modules plug into them using the functions below.
 
 | File | What it contains |
 |---|---|

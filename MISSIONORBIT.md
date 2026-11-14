@@ -104,7 +104,7 @@ All missions are ordered strictly by their real-world **NASA launch dates**, exp
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **01** | **Mercury Mission** (`SAT-001`) | **Mariner 10** | **Nov 3, 1973** *(05:45 UTC)* · Atlas-Centaur, Cape Canaveral LC-36B | `Venus`, `Mercury` | First spacecraft to use an interplanetary gravity assist (via Venus) to reach Mercury, completing three flybys in 1974–1975 to map its cratered terrain. |
 | **02** | **Mars Mission** (`SAT-002`) | **Viking 1** | **Aug 20, 1975** *(21:22 UTC)* · Titan IIIE-Centaur, Cape Canaveral LC-41 | `Mars`, `Phobos`, `Deimos` | Launched on an 11-month voyage to Mars; its lander touched down on Chryse Planitia on July 20, 1976, transmitting the first photograph taken from the Martian surface. |
-| **03** | **Ice Giants Mission** (`SAT-003`) | **Voyager 2** | **Aug 20, 1977** *(14:29 UTC)* · Titan IIIE-Centaur, Cape Canaveral LC-41 | `Jupiter`, `Saturn`, `Uranus`, `Neptune`, `Triton` | Launched 16 days *before* Voyager 1 on a trajectory taking advantage of a rare 175-year planetary alignment; remains the only spacecraft to visit Uranus (1986) and Neptune (1989). |
+| **03** | **Ice Giants Mission** (`SAT-003`) | **Voyager 2** | **Aug 20, 1977** *(14:29 UTC)* · Titan IIIE-Centaur, Cape Canaveral LC-41 | `Jupiter`, `Saturn`, `Uranus`, `Neptune`, `Triton` | Launched 16 days *before* Voyager 1 on a trajectory taking advantage of a layout of the outer planets that comes around only about every 175 years; remains the only spacecraft to visit Uranus (1986) and Neptune (1989). |
 | **04** | **Gas Giants Mission** (`SAT-004`) | **Voyager 1** | **Sep 5, 1977** *(12:56 UTC)* · Titan IIIE-Centaur, Cape Canaveral LC-41 | `Jupiter`, `Io`, `Saturn`, `Titan` | Launched on a faster path than its twin, reaching Jupiter in March 1979 (discovering active sulfur volcanoes on Io) and Saturn in November 1980 before heading toward interstellar space. |
 | **05** | **Venus Mission** (`SAT-005`) | **Magellan** | **May 4, 1989** *(18:47 UTC)* · Space Shuttle Atlantis (STS-30) / IUS, KSC LC-39B | `Earth`, `Venus` | First planetary spacecraft launched from a Space Shuttle; entered Venus orbit on Aug 10, 1990 and used synthetic aperture radar to map 98% of the planet's cloud-shrouded surface. |
 
@@ -113,7 +113,7 @@ All missions are ordered strictly by their real-world **NASA launch dates**, exp
 | Lvl | Mission Title (Code) | Spacecraft | NASA Launch Date & Vehicle | Targets to Scan (In Order) | Historical Knowledge Imparted (NASA Reference) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **06** | **Saturn Mission** (`SAT-006`) | **Cassini-Huygens** | **Oct 15, 1997** *(08:43 UTC)* · Titan IVB/Centaur, Cape Canaveral SLC-40 | `Titan`, `Enceladus`, `Rhea`, `Mimas`, `Iapetus`, `Dione`, `Tethys` | Joint NASA/ESA/ASI mission that orbited Saturn for 13 years, landing the Huygens probe on Titan (Jan 2005) and discovering icy water plumes erupting from Enceladus. |
-| **07** | **Pluto Mission** (`SAT-007`) | **New Horizons** | **Jan 19, 2006** *(19:00 UTC)* · Atlas V 551, Cape Canaveral SLC-41 | `Jupiter`, `Pluto`, `Charon` | Fastest spacecraft ever launched from Earth, crossing the Moon's orbit in just 9 hours and executing the first reconnaissance flyby of Pluto and Charon on July 14, 2015. |
+| **07** | **Pluto Mission** (`SAT-007`) | **New Horizons** | **Jan 19, 2006** *(19:00 UTC)* · Atlas V 551, Cape Canaveral SLC-41 | `Jupiter`, `Pluto`, `Charon` | Highest launch speed of any spacecraft relative to Earth, crossing the Moon's orbit in about 9 hours and executing the first reconnaissance flyby of Pluto and Charon on July 14, 2015. |
 
 ### Era Folder 3: `Missions Launched: 2010s – 2020s`
 
@@ -184,3 +184,18 @@ All launch dates, launch vehicles, launch sites, and discovery summaries in Sect
 7. **New Horizons:** [NASA Science — New Horizons](https://science.nasa.gov/mission/new-horizons/)
 8. **Juno:** [NASA Science — Juno](https://science.nasa.gov/mission/juno/) & [NASA JPL Juno Press Kit](https://www.jpl.nasa.gov/news/press_kits/juno/facts/)
 9. **James Webb Space Telescope:** [NASA Science — Webb](https://science.nasa.gov/mission/webb/)
+
+---
+
+## 8. As Built (November 2026)
+
+This section records where the shipped game differs from, or adds to, the sections above.
+
+* **Flow.** Splash → Archive → Assembly → Briefing → Objectives → Explore → Complete / Lost → Outro, with the 6-step progress rail (`01 Archive` ... `06 Outcome`) in the top bar. The Objectives screen includes the spacecraft-readiness panel and an **Edit build** link back to Assembly.
+* **Unlocking.** Mission 1 is open; each later mission opens once the one before it is completed. (`?unlock-all` opens everything in development builds only.)
+* **Stars.** One star each for: all targets scanned, scan accuracy of 90% or better, hull integrity of 50% or better at the end. Stars have no spending purpose yet; part unlocks are switched off (`ENFORCE_PART_UNLOCKS`).
+* **Flight.** Rules, numbers and the fairness guarantee are in [GAMEPLAY.md](GAMEPLAY.md). The flight simulation (`flightSim.ts`, `flightPhysics.ts`, `spawner.ts`, `flightTypes.ts`) lives in `src/engine/`, apart from the canvas and React code.
+* **Pause.** `Esc` pauses; focus loss pauses automatically.
+* **Parts.** Bodies trade hull for speed (see GAMEPLAY.md, "Part balance").
+* **Content.** All mission and body data was checked against NASA pages in November 2026. Each mission lists its sources in `src/data/missions.ts`; numeric body data matches NASA's NSSDCA planetary fact sheets. `npm test` guards the data.
+* **Not yet built.** Checkpoints after each scan, a use for stars, and human-playtest tuning.
