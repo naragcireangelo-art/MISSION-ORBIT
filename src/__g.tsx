@@ -38,3 +38,13 @@ setInterval(() => {
 if (q.get('god') === '1') setInterval(() => { const sim = (window as any).__moSim; if (sim && sim.status === 'flying') { sim.hull = 999; } }, 100);
 
 (window as any).__audio = audioManager; (window as any).__store = useGameStore;
+
+if (q.get('die') === '1') {
+  let set = false;
+  setInterval(() => {
+    const sim = (window as any).__moSim; if (!sim) return;
+    if (!set) { sim.hull = 2; set = true; }
+    if (sim.status === 'flying' && sim.ship.invuln <= 0)
+      sim.asteroids.push({ id: 9000 + Math.floor(Math.random() * 1e6), x: sim.ship.x, y: sim.ship.y, vx: 0, vy: 0, r: 0.06, rot: 0, spin: 0, shape: 0, grazed: false, hit: false });
+  }, 100);
+}
