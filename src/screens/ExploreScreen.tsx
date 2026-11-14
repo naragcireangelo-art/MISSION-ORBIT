@@ -101,6 +101,8 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
       seed: (Math.random() * 0xffffffff) >>> 0,
     });
     simRef.current = sim;
+    // Dev only: lets browser tests and the console inspect or tweak the live run (`window.__moSim`).
+    if (import.meta.env.DEV) (window as unknown as { __moSim?: FlightSim }).__moSim = sim;
 
     router.reset();
     telemetry.reset();
@@ -351,6 +353,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
       audioManager.stopAlarm();
       simRef.current = null;
       loopRef.current = null;
+      if (import.meta.env.DEV) delete (window as unknown as { __moSim?: FlightSim }).__moSim;
     };
     // The mission and build are fixed for the lifetime of a flight; Retry remounts this screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -397,7 +400,12 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     const onHide = (): void => {
       if (document.hidden) applyPauseRef.current(true);
     };
-    const onBlur = (): void => applyPauseRef.current(true);
+    // Focus moving into an iframe or overlay also fires `blur`; only pause when the page truly lost focus.
+    const onBlur = (): void => {
+      window.setTimeout(() => {
+        if (!document.hasFocus()) applyPauseRef.current(true);
+      }, 0);
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('blur', onBlur);
     document.addEventListener('visibilitychange', onHide);
