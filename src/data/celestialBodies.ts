@@ -55,7 +55,6 @@ export interface CelestialBody {
 }
 
 const NASA = 'https://science.nasa.gov';
-const WEBB = `${NASA}/mission/webb/`;
 
 export const BODY_LIST = [
   // --- Planets -------------------------------------------------------------
@@ -91,12 +90,12 @@ export const BODY_LIST = [
     id: 'jupiter', name: 'Jupiter', scanName: 'jupiter', kind: 'planet',
     diameterKm: 139820, distanceAu: 5.204,
     palette: { base: '#d8a574', shade: '#8f5f3a', accent: '#f1d9bd' }, visualRadius: 1.1,
-    fact: 'Jupiter is the largest planet, and its Great Red Spot is a storm wider than Earth.',
+    fact: 'Jupiter is the largest planet, and its Great Red Spot is a storm larger than Earth.',
     sourceUrl: `${NASA}/jupiter/`,
   },
   {
     id: 'saturn', name: 'Saturn', scanName: 'saturn', kind: 'planet',
-    diameterKm: 116460, distanceAu: 9.58, rings: true,
+    diameterKm: 116460, distanceAu: 9.537, rings: true,
     palette: { base: '#d9c38d', shade: '#92804f', accent: '#efe2bb' }, visualRadius: 1.0,
     fact: 'Saturn\'s rings are made mostly of water-ice particles ranging from dust grains to boulders.',
     sourceUrl: `${NASA}/saturn/`,
@@ -112,7 +111,7 @@ export const BODY_LIST = [
     id: 'neptune', name: 'Neptune', scanName: 'neptune', kind: 'planet',
     diameterKm: 49244, distanceAu: 30.07,
     palette: { base: '#3f66d8', shade: '#1f3790', accent: '#8fa8f2' }, visualRadius: 0.8,
-    fact: 'Neptune has the fastest winds measured on any planet, supersonic in places.',
+    fact: 'Neptune is the windiest planet in the solar system, with supersonic winds.',
     sourceUrl: `${NASA}/neptune/`,
   },
   {
@@ -235,28 +234,28 @@ export const BODY_LIST = [
     kind: 'observatory', parentId: 'earth', orbitalRadiusKm: 1500000,
     palette: { base: '#e8c24a', shade: '#8a6d1a', accent: '#fff2b8' }, visualRadius: 0.5,
     fact: 'Webb sees infrared light with an 18-segment, gold-coated beryllium mirror 6.5 meters wide.',
-    sourceUrl: WEBB,
+    sourceUrl: `${NASA}/mission/webb/`,
   },
   {
     id: 'carina', name: 'Carina', fullName: 'Carina Nebula', scanName: 'carina',
     kind: 'nebula', distanceLy: 7600,
     palette: { base: '#e08a5a', shade: '#7a3a5e', accent: '#7fb5ff' }, visualRadius: 1.1,
-    fact: 'The Carina Nebula is a stellar nursery, and Webb imaged its towering "Cosmic Cliffs" of gas and dust.',
-    sourceUrl: WEBB,
+    fact: 'The Carina Nebula is a star-forming region, and Webb imaged its towering "Cosmic Cliffs" of gas and dust.',
+    sourceUrl: `${NASA}/missions/webb/nasas-webb-reveals-cosmic-cliffs-glittering-landscape-of-star-birth/`,
   },
   {
     id: 'stephan', name: 'Stephan', fullName: 'Stephan\'s Quintet', scanName: 'stephan',
     kind: 'galaxy-group', distanceLy: 290000000,
     palette: { base: '#f2c9a0', shade: '#5a4a8a', accent: '#9ec9ff' }, visualRadius: 1.0,
-    fact: 'Stephan\'s Quintet is a compact group of galaxies that Webb imaged in 2022.',
-    sourceUrl: WEBB,
+    fact: 'Stephan\'s Quintet is a compact group of five galaxies, four of them interacting, that Webb imaged in 2022.',
+    sourceUrl: `${NASA}/missions/webb/nasas-webb-sheds-light-on-galaxy-evolution-black-holes`,
   },
   {
     id: 'wasp-39b', name: 'WASP-39b', fullName: 'WASP-39 b', scanName: 'wasp-39b',
     kind: 'exoplanet', distanceLy: 700,
     palette: { base: '#c98a6a', shade: '#6a3f2e', accent: '#f0c6a8' }, visualRadius: 0.9,
     fact: 'Webb detected carbon dioxide in the atmosphere of WASP-39 b, a hot gas giant.',
-    sourceUrl: WEBB,
+    sourceUrl: 'https://exoplanets.nasa.gov/news/1711/webb-sees-carbon-dioxide-in-exoplanets-atmosphere',
   },
 ] as const satisfies readonly CelestialBody[];
 
