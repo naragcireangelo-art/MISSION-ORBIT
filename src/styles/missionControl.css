@@ -4,7 +4,7 @@
    Celestial Codex. Every class is prefixed `mo-` so it cannot clash with other CSS.
    ════════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap');
+/* Fonts load from <link> tags in index.html, so they never block this stylesheet. */
 
 /* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {
@@ -1665,8 +1665,7 @@
   place-items: center;
   padding: 3vh 3vw;
   box-sizing: border-box;
-  background: rgba(2, 5, 14, 0.74);
-  backdrop-filter: blur(7px);
+  background: rgba(2, 5, 14, 0.9);
   animation: mo-fade-in 0.25s ease-out both;
 }
 .mo-codex {
@@ -1796,6 +1795,7 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
+  contain: layout paint;
   transition: background 0.15s, border-color 0.15s;
 }
 .mo-codex__row:hover {
@@ -1865,6 +1865,7 @@
   inset: 14px;
   border: 1px dashed rgba(111, 243, 255, 0.25);
   border-radius: 50%;
+  will-change: transform;
   animation: mo-spin 50s linear infinite;
   pointer-events: none;
 }
@@ -1968,7 +1969,7 @@
     radial-gradient(40vmax 28vmax at 20% 28%, rgba(120, 60, 220, 0.16), transparent 70%),
     radial-gradient(36vmax 26vmax at 82% 66%, rgba(0, 150, 210, 0.15), transparent 70%),
     radial-gradient(30vmax 20vmax at 50% 108%, rgba(60, 130, 255, 0.28), transparent 70%);
-  mix-blend-mode: screen;
+  will-change: transform;
   animation: mo-nebula-drift 30s ease-in-out infinite alternate, mo-fade-in 2s ease-out both;
 }
 
@@ -2136,8 +2137,7 @@
   padding: 13px 28px;
   border: 1px solid var(--mo-line-2);
   border-radius: 4px;
-  background: rgba(4, 12, 28, 0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(4, 12, 28, 0.78);
   font-family: var(--mo-font-mono);
   font-size: clamp(11px, 1.8vh, 14px);
   font-weight: 700;
@@ -2155,7 +2155,20 @@
   box-shadow: 0 0 34px rgba(111, 243, 255, 0.35);
 }
 .mo-splash[data-stage='ready'] .mo-splash__start {
-  animation: mo-rise-in 0.01s both, mo-start-pulse 2.2s ease-in-out infinite;
+  animation: mo-rise-in 0.01s both;
+}
+.mo-splash__start::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--mo-cyan);
+  border-radius: 4px;
+  box-shadow: 0 0 36px rgba(111, 243, 255, 0.42);
+  opacity: 0;
+  pointer-events: none;
+}
+.mo-splash[data-stage='ready'] .mo-splash__start::after {
+  animation: mo-start-pulse 2.2s ease-in-out infinite;
 }
 .mo-splash__chev {
   font-size: 0.8em;
@@ -2255,12 +2268,12 @@
   to { opacity: 1; transform: none; filter: none; }
 }
 @keyframes mo-screen-in {
-  from { opacity: 0; transform: translateY(16px); filter: blur(8px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes mo-frame-in {
-  from { opacity: 0; filter: brightness(2.8) saturate(0.4); }
-  to { opacity: 1; filter: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes mo-card-in {
   from { opacity: 0; transform: translateY(22px) scale(0.97); }
@@ -2272,8 +2285,8 @@
   100% { filter: brightness(2.2); opacity: 0.9; }
 }
 @keyframes mo-target-in {
-  from { opacity: 0; transform: scale(0.6) rotate(-8deg); filter: blur(10px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes mo-codex-in {
   from { opacity: 0; transform: translateY(24px) scale(0.96); }
@@ -2330,22 +2343,20 @@
   to { transform: translate3d(1.5%, 1%, 0) scale(1.06); }
 }
 @keyframes mo-earth-rise {
-  from { opacity: 0; transform: translateY(16vh) scale(0.45); filter: blur(14px) brightness(2); }
-  60% { filter: blur(0) brightness(1.3); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(16vh) scale(0.45); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes mo-letter-in {
-  from { opacity: 0; transform: translateY(26px) scale(1.35); filter: blur(16px); letter-spacing: 0.5em; }
-  to { opacity: 1; transform: none; filter: none; letter-spacing: 0; }
+  from { opacity: 0; transform: translateY(26px) scale(1.35); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes mo-letter-wave {
-  0%, 100% { color: #f4fbff; text-shadow: 0 0 20px rgba(111, 243, 255, 0.55), 0 0 64px rgba(60, 140, 255, 0.4); }
-  8% { color: #ffffff; text-shadow: 0 0 26px rgba(255, 255, 255, 0.95), 0 0 80px rgba(111, 243, 255, 0.8); }
-  22% { color: #f4fbff; text-shadow: 0 0 20px rgba(111, 243, 255, 0.55), 0 0 64px rgba(60, 140, 255, 0.4); }
+  0%, 22%, 100% { opacity: 0.84; }
+  8% { opacity: 1; }
 }
 @keyframes mo-start-pulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(111, 243, 255, 0); border-color: var(--mo-line-2); }
-  50% { box-shadow: 0 0 36px rgba(111, 243, 255, 0.42); border-color: var(--mo-cyan); }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 @keyframes mo-chev {
   0%, 100% { transform: translateX(0); opacity: 0.6; }
@@ -2358,14 +2369,14 @@
 }
 @keyframes mo-earth-launch {
   from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(10vh) scale(3.4); filter: blur(10px) brightness(2.2); }
+  to { opacity: 0; transform: translateY(10vh) scale(3.4); }
 }
 @keyframes mo-halo-launch {
   to { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
 }
 @keyframes mo-letter-out {
   from { opacity: 1; transform: none; filter: none; }
-  to { opacity: 0; transform: translateY(-30px) scale(2.2); filter: blur(14px); }
+  to { opacity: 0; transform: translateY(-30px) scale(2.2); }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

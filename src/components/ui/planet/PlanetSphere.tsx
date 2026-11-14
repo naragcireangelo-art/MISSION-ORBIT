@@ -357,6 +357,26 @@ function renderRingHalf(
   return canvas;
 }
 
+// ── Scroll awareness ─────────────────────────────────────────────────────────
+
+// Shading a sphere is main-thread work, so spheres sit still while anything on the page scrolls.
+let lastScrollAt = -1e9;
+let listeningForScroll = false;
+
+function trackScroll(): void {
+  if (listeningForScroll || typeof window === 'undefined') return;
+  listeningForScroll = true;
+  window.addEventListener(
+    'scroll',
+    () => {
+      lastScrollAt = performance.now();
+    },
+    { capture: true, passive: true },
+  );
+}
+
+const SCROLL_QUIET_MS = 150;
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function PlanetSphere({
@@ -389,7 +409,7 @@ export function PlanetSphere({
     if (!ctx) return;
 
     // Cap the backing store so very large canvases (the Splash Earth) stay fast.
-    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, 1600 / box));
+    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, 1200 / box));
     canvas.width = Math.round(box * dpr);
     canvas.height = Math.round(box * dpr);
 
@@ -493,7 +513,7 @@ export function PlanetSphere({
       if (cancelled) return;
       raf = requestAnimationFrame(frame);
       if (!visible || document.hidden) return;
-      if (!immediate && now - last < 1000 / fps) return;
+      if (!immediate && (now - last < 1000 / fps || now - lastScrollAt < SCROLL_QUIET_MS)) return;
       immediate = false;
       last = now;
       if (interactive) step(now);
@@ -512,6 +532,8 @@ export function PlanetSphere({
         draw(performance.now());
       });
     };
+
+    trackScroll();
 
     // Build the texture a moment after mount so the first paint is never blocked.
     const timer = window.setTimeout(() => {

@@ -11,6 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from './hooks';
+import { useGameStore } from '../../store/useGameStore';
 
 export interface SpaceBackdropProps {
   /** `idle` drifts calmly; `warp` accelerates into hyperspace streaks. */
@@ -135,6 +136,9 @@ export function SpaceBackdrop({
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const reduced = useReducedMotion();
+  // The star field is hidden behind the codex, so stop repainting it while that is open.
+  const pausedRef = useRef(false);
+  pausedRef.current = useGameStore((st) => st.codexOpen);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -306,7 +310,7 @@ export function SpaceBackdrop({
     const loop = (now: number): void => {
       if (cancelled) return;
       raf = requestAnimationFrame(loop);
-      if (document.hidden) {
+      if (document.hidden || pausedRef.current) {
         last = now;
         return;
       }

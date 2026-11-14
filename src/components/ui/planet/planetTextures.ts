@@ -1084,5 +1084,39 @@ export function getPlanetTexture(id: SphereArtId): PlanetTexture {
   return tex;
 }
 
+/**
+ * Builds textures for the given bodies one at a time while the browser is idle, so a later
+ * `getPlanetTexture` is an instant cache hit instead of a main-thread stall. Returns a cancel.
+ */
+export function prewarmTextures(ids: readonly SphereArtId[] = Object.keys(SPHERE_STYLES) as SphereArtId[]): () => void {
+  const queue = ids.filter((id) => !cache.has(id));
+  let cancelled = false;
+  let handle = 0;
+  const schedule = (fn: () => void): void => {
+    if (typeof window.requestIdleCallback === 'function') {
+      handle = window.requestIdleCallback(fn, { timeout: 3000 });
+    } else {
+      handle = window.setTimeout(fn, 120);
+    }
+  };
+  const next = (): void => {
+    if (cancelled) return;
+    const id = queue.shift();
+    if (!id) return;
+    try {
+      getPlanetTexture(id);
+    } catch {
+      // A body that fails to build is simply built (and handled) when it is first drawn.
+    }
+    schedule(next);
+  };
+  schedule(next);
+  return () => {
+    cancelled = true;
+    if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(handle);
+    window.clearTimeout(handle);
+  };
+}
+
 // Exposed for components that need the same colour maths.
 export { smoothstep };
