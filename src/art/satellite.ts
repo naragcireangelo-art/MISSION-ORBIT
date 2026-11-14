@@ -206,8 +206,8 @@ export function satelliteBounds(parts: SatelliteParts, scale = 1): { left: numbe
   const flameLen = Math.max(...THRUSTER_ART[ids.thruster].flames.map((f) => Math.abs(f.x) + f.len));
   return {
     left: -(Math.abs(a.rear.x) + flameLen) * scale,
-    right: (a.halfW + 24) * scale,
-    top: -(a.halfH + 36 + 24) * scale,
-    bottom: (a.halfH + 36 + 24) * scale,
+    right: (a.halfW + 6) * scale,
+    top: -(a.halfH + 38) * scale,
+    bottom: (a.halfH + 38) * scale,
   };
 }
