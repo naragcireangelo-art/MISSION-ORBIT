@@ -4,7 +4,7 @@
  * Nine real NASA missions, filed in strict launch-date order inside three era folders
  * (1970s–1980s · 1990s–2000s · 2010s–2020s). Each folder shows its mission dossier cards. 
  *
- * Every level is open. Keyboard: 1 / 2 / 3 jump to an era folder; ← / → move between tabs.
+ * Levels unlock in order: a level opens once the one before it is completed. Keyboard: 1 / 2 / 3 jump to an era folder; ← / → move between tabs.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -26,6 +26,9 @@ import { useGameStore } from '../store/useGameStore';
 const getUnlockRequirement = (m: Mission): Mission | undefined =>
   m.levelNumber > 1 ? getMissionByLevel(m.levelNumber - 1) : undefined;
 
+/** Dev only: open the game with `?unlock-all` to test any level without finishing the ones before it. */
+const UNLOCK_ALL = import.meta.env.DEV && new URLSearchParams(window.location.search).has('unlock-all');
+
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 export function MissionArchiveScreen() {
@@ -41,7 +44,7 @@ export function MissionArchiveScreen() {
     [completedIds],
   );
   const statusOf = (m: Mission): DossierStatus =>
-    completedIds.includes(m.id) ? 'complete' : isMissionUnlocked(m, progress) ? 'ready' : 'locked';
+    completedIds.includes(m.id) ? 'complete' : UNLOCK_ALL || isMissionUnlocked(m, progress) ? 'ready' : 'locked';
 
   const [activeEra, setActiveEra] = useState<EraId>(() => {
     const next = MISSIONS.find((m) => !completedIds.includes(m.id) && isMissionUnlocked(m, progress));
