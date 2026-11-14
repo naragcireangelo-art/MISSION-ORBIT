@@ -325,7 +325,7 @@ export const MISSIONS: readonly MissionData[] = [
     launchTimeUTC: '08:43',
     launchVehicle: 'Titan IVB/Centaur',
     launchSite: 'Cape Canaveral Air Force Station',
-    briefingTarget: { title: 'SATURN', designation: 'SOL VI', rangeAu: 9.58, bodyId: 'saturn' },
+    briefingTarget: { title: 'SATURN', designation: 'SOL VI', rangeAu: 9.54, bodyId: 'saturn' },
     launchContext:
       'Cassini-Huygens was a joint NASA, ESA and ASI mission. It needed gravity assists from Venus, Earth and Jupiter to reach Saturn, where it arrived in July 2004 carrying ESA\'s Huygens probe.',
     knownAtLaunch:
