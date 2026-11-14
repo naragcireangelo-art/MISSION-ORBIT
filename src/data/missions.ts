@@ -301,7 +301,7 @@ export const MISSIONS: readonly MissionData[] = [
     knownAtLaunch:
       'Thick clouds hide the surface of Venus from ordinary cameras, so most of its landscape was still unmapped.',
     discoveryFact:
-      'Entered Venus orbit on Aug 10, 1990 and used synthetic aperture radar to map 98% of the planet\'s cloud-shrouded surface.',
+      'Entered Venus orbit on Aug 10, 1990 and used synthetic aperture radar to map 98% of the planet\'s cloud-shrouded surface by September 1992.',
     objectiveHeadline: 'Documented Earth and Venus',
     objectives: perTarget(['earth', 'venus']),
     targetIds: ['earth', 'venus'],
@@ -440,7 +440,7 @@ export const MISSIONS: readonly MissionData[] = [
       src('NASA Science: Webb', 'https://science.nasa.gov/mission/webb/'),
       src('NASA Science: Webb launch', 'https://science.nasa.gov/mission/webb/launch/'),
       src('NASA: Webb reveals the Cosmic Cliffs (Carina)', 'https://science.nasa.gov/missions/webb/nasas-webb-reveals-cosmic-cliffs-glittering-landscape-of-star-birth/'),
-      src('NASA: Webb sheds light on galaxy evolution (Stephan's Quintet)', 'https://science.nasa.gov/missions/webb/nasas-webb-sheds-light-on-galaxy-evolution-black-holes'),
+      src('NASA: Webb sheds light on galaxy evolution (Stephan\'s Quintet)', 'https://science.nasa.gov/missions/webb/nasas-webb-sheds-light-on-galaxy-evolution-black-holes'),
       src('NASA Exoplanets: Webb sees carbon dioxide (WASP-39 b)', 'https://exoplanets.nasa.gov/news/1711/webb-sees-carbon-dioxide-in-exoplanets-atmosphere'),
     ],
   },
