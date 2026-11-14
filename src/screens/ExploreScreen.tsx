@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { drawAsteroid, drawSatellite, drawStarfield } from '../art';
+import { useReducedMotion } from '../components/ui/hooks';
 import { BodyPortrait } from '../components/ui/planet/BodyPortrait';
 import { bodyArt, findBody } from '../components/flight/bodyLookup';
 import { MissionHud } from '../components/flight/MissionHud';
@@ -38,6 +39,23 @@ interface TargetView {
   art: NonNullable<ReturnType<typeof bodyArt>>;
   /** Diameter in world units (fractions of the stage height). */
   size: number;
+}
+
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  life: number;
+  color: string;
+}
+
+/** An expanding ring, used for the death burst. */
+interface Shock {
+  x: number;
+  y: number;
+  age: number;
 }
 
 interface Popup {
@@ -88,6 +106,9 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
   const [target, setTarget] = useState<TargetView | null>(null);
   const [stageH, setStageH] = useState(700);
   const [paused, setPaused] = useState(false);
+  const reduced = useReducedMotion();
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
   const [intro, setIntro] = useState(true);
   const [showHint] = useState(takeFirstRunHint);
   const [incoming, setIncoming] = useState<{ label: string; seq: number } | null>(null);
@@ -151,6 +172,17 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     let sinceHud = 0;
     let ended = false;
     const popups: Popup[] = [];
+    const sparks: Spark[] = [];
+    const shocks: Shock[] = [];
+    const burst = (x: number, y: number, count: number, speed: number): void => {
+      if (reducedRef.current) return; // no flying debris for players who asked for less motion
+      const colors = ['#ffb84d', '#ff6b3d', '#ffe6a8', '#6ff3ff'];
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = speed * (0.35 + Math.random() * 0.9);
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, life: 0.5 + Math.random() * 0.6, color: colors[i % colors.length] });
+      }
+    };
     const backCtx = back.getContext('2d');
 
     const sizeBack = (): void => {
@@ -202,8 +234,18 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
           if (ended) return;
           const aspect = aspectNow();
           if (Math.abs(aspect - sim.aspect) > 0.01) sim.setAspect(aspect);
-          scroll += step.dt;
+          if (!reducedRef.current) scroll += step.dt;
           hitFlash = Math.max(0, hitFlash - step.realDt * 1.8);
+          for (const sp of sparks) {
+            sp.age += step.realDt;
+            sp.x += sp.vx * step.realDt;
+            sp.y += sp.vy * step.realDt;
+            sp.vx *= 0.97;
+            sp.vy *= 0.97;
+          }
+          for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].age > sparks[i].life) sparks.splice(i, 1);
+          for (const sh of shocks) sh.age += step.realDt;
+          while (shocks.length && shocks[0].age > 0.9) shocks.shift();
           for (const p of popups) p.age += step.realDt;
           while (popups.length && popups[0].age > 1.1) popups.shift();
 
@@ -224,6 +266,8 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
                 audioManager.hullHit();
                 hitFlash = 1;
                 setHull(e.hull);
+                burst(sim.ship.x, sim.ship.y, e.hull === 0 ? 46 : 14, e.hull === 0 ? 0.55 : 0.32);
+                if (e.hull === 0 && !reducedRef.current) shocks.push({ x: sim.ship.x, y: sim.ship.y, age: 0 });
                 break;
               case 'nearMiss':
                 audioManager.nearMiss(e.pan);
@@ -358,11 +402,34 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
         (f) => {
           const { ctx, width, height } = f;
           if (hitFlash > 0) {
+            const flashMax = reducedRef.current ? 0.22 : 0.55; // a gentler flash when motion is reduced
             const g = ctx.createRadialGradient(width / 2, height / 2, height * 0.35, width / 2, height / 2, height * 0.95);
             g.addColorStop(0, 'rgba(255, 70, 50, 0)');
-            g.addColorStop(1, `rgba(255, 70, 50, ${0.55 * hitFlash})`);
+            g.addColorStop(1, `rgba(255, 70, 50, ${flashMax * hitFlash})`);
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, width, height);
+          }
+          if (sparks.length || shocks.length) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const sp of sparks) {
+              const k = 1 - sp.age / sp.life;
+              ctx.globalAlpha = Math.max(0, k);
+              ctx.fillStyle = sp.color;
+              ctx.beginPath();
+              ctx.arc(sp.x * height, sp.y * height, (1.2 + 2.4 * k) * (height / 760), 0, Math.PI * 2);
+              ctx.fill();
+            }
+            for (const sh of shocks) {
+              const k = sh.age / 0.9;
+              ctx.globalAlpha = Math.max(0, 1 - k) * 0.8;
+              ctx.strokeStyle = '#ffb84d';
+              ctx.lineWidth = 3 * (height / 760);
+              ctx.beginPath();
+              ctx.arc(sh.x * height, sh.y * height, (0.04 + 0.34 * k) * height, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.restore();
           }
           ctx.textAlign = 'center';
           ctx.font = `600 ${Math.round(height * 0.02)}px ui-monospace, Consolas, monospace`;
