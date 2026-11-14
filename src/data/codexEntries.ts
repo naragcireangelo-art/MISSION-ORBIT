@@ -96,7 +96,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     group: 'planets',
     art: 'earth',
     stats: [
-      ['Diameter', '12,742 km'],
+      ['Diameter', '12,742 km (mean)'],
       ['Distance from Sun', '149.6 million km (1 AU)'],
       ['Moons', '1'],
     ],
@@ -113,7 +113,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       ['Distance from Sun', '227.9 million km (1.52 AU)'],
       ['Moons', '2 (Phobos, Deimos)'],
     ],
-    fact: 'Viking 1’s lander touched down on Chryse Planitia on July 20, 1976 and returned the first clear photograph from the Martian surface. Mars is home to Olympus Mons, the tallest volcano known in the Solar System.',
+    fact: 'Viking 1’s lander touched down on Chryse Planitia on July 20, 1976 and returned the first clear photograph from the Martian surface. Mars is home to Olympus Mons, the largest volcano in the Solar System.',
   },
   {
     scanName: 'Jupiter',
@@ -126,7 +126,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       ['Distance from Sun', '778 million km (5.2 AU)'],
       ['Day length', 'about 10 hours'],
     ],
-    fact: 'The largest planet in the Solar System. The Great Red Spot is a storm about as wide as Earth. Voyager 1 passed Jupiter in March 1979; Juno entered polar orbit on July 4, 2016.',
+    fact: 'The largest planet in the Solar System. The Great Red Spot is a storm larger than Earth. Voyager 1 passed Jupiter in March 1979; Juno entered polar orbit on July 4, 2016 (US time).',
   },
   {
     scanName: 'Saturn',
@@ -136,7 +136,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     art: 'saturn',
     stats: [
       ['Diameter', '120,536 km (equatorial)'],
-      ['Distance from Sun', '1.43 billion km (9.6 AU)'],
+      ['Distance from Sun', '1.43 billion km (9.5 AU)'],
       ['Rings', 'Mostly water ice'],
     ],
     fact: 'Saturn’s rings are made mostly of water ice, from dust grains to house-sized chunks. Cassini orbited the planet for 13 years.',
@@ -165,7 +165,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       ['Distance from Sun', '4.5 billion km (30.1 AU)'],
       ['Peak winds', 'over 2,000 km/h'],
     ],
-    fact: 'Voyager 2 reached Neptune in August 1989, the only spacecraft ever to do so. It found a Great Dark Spot and six new moons, and measured the fastest winds known in the Solar System.',
+    fact: 'Voyager 2 reached Neptune in August 1989, the only spacecraft ever to do so. It found a Great Dark Spot and five new moons, and measured the fastest winds known in the Solar System.',
   },
   {
     scanName: 'Pluto',
@@ -178,7 +178,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       ['Distance from Sun', '5.9 billion km (39.5 AU avg.)'],
       ['Moons', '5 known'],
     ],
-    fact: 'New Horizons flew past Pluto on July 14, 2015, revealing mountains of water ice and a heart-shaped plain of nitrogen ice named Tombaugh Regio.',
+    fact: 'New Horizons flew past Pluto on July 14, 2015, revealing mountains of water ice and a vast heart-shaped region named Tombaugh Regio, whose western half is a plain of nitrogen ice called Sputnik Planitia.',
   },
 
   // ── Moons ──────────────────────────────────────────────────────────────────
@@ -390,7 +390,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       ['Distance', 'about 7,600 light-years'],
       ['Constellation', 'Carina'],
     ],
-    fact: 'A stellar nursery in the southern sky. Webb’s first-light image of its “Cosmic Cliffs” revealed young stars never seen before, hidden inside clouds of dust.',
+    fact: 'A star-forming region in the southern sky. One of Webb’s first science images, released in July 2022, shows its “Cosmic Cliffs” and young stars that were hidden inside clouds of dust.',
   },
   {
     scanName: 'Stephan',
@@ -400,10 +400,10 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     art: 'stephan',
     stats: [
       ['Type', 'Galaxy group'],
-      ['Distance', 'about 290 million light-years'],
+      ['Distance', 'about 290 million light-years (four of five)'],
       ['Constellation', 'Pegasus'],
     ],
-    fact: 'Discovered by Édouard Stephan in 1877. Four of its five galaxies are locked in repeated close encounters, which Webb imaged in infrared in 2022.',
+    fact: 'Discovered by Édouard Stephan in 1877. Four of its five galaxies are caught in a cosmic dance of close encounters; the fifth is a foreground galaxy about 40 million light-years away. Webb imaged the group in infrared in July 2022.',
   },
   {
     scanName: 'WASP-39b',
