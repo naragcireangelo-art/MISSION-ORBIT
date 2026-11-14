@@ -14,6 +14,7 @@ export type { DrawSatelliteOptions, SatelliteParts } from './satellite';
 export { ASTEROID_SHAPE_COUNT, asteroidHitRadius, drawAsteroid } from './asteroids';
 export type { DrawAsteroidOptions } from './asteroids';
 export { PALETTE } from './paths';
+export { drawStarfield } from './backdrop';
 
 export { BodyPortrait } from '../components/ui/planet/BodyPortrait';
 export { PlanetSphere } from '../components/ui/planet/PlanetSphere';
