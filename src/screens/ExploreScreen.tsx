@@ -160,6 +160,8 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
     uiAudio.stop();
     void audioManager.unlock().then(() => {
       audioManager.setMuted(useGameStore.getState().muted);
+      audioManager.setMusicTier(mission.tier); // tempo follows the level's difficulty
+      audioManager.setScanMode(false);
       void audioManager.startMusic();
     });
     const maxRocks = Math.max(1, getTierConfig(mission).maxAsteroids);
@@ -203,6 +205,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
         if (state.muted !== prev.muted) audioManager.setMuted(state.muted);
       }),
       router.on('phase', ({ phase, previous }) => {
+        audioManager.setScanMode(phase === 'SCAN'); // the music slows and darkens with the world
         if (phase === 'SCAN') loop.enterSlowMo();
         else loop.exitSlowMo();
         if (phase === 'RESUME' && previous === 'SCAN') audioManager.resume();
@@ -315,10 +318,12 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
           sinceAudio += step.realDt;
           if (sinceAudio >= 0.25) {
             sinceAudio = 0;
+            // Never below a steady baseline (the pulse is always there), rising with the crowd; kick and hats
+            // join as it gets busy. During a scan the music holds a calm middle level in half-time.
             const calm = sim.status !== 'flying' || router.getPhase() === 'SCAN';
             const crowd = Math.min(1, sim.asteroids.length / maxRocks);
-            const danger = sim.hull === 1 && sim.maxHull > 1 ? 0.9 : 0;
-            audioManager.setIntensity(calm ? 0 : Math.max(crowd * 0.8, danger));
+            const danger = sim.hull === 1 && sim.maxHull > 1 ? 0.95 : 0;
+            audioManager.setIntensity(calm ? 0.3 : Math.max(0.25 + 0.75 * crowd, danger));
           }
 
           // HUD numbers that change continuously are throttled to ~10 per second.
@@ -462,6 +467,7 @@ function ExploreRun({ onRestart }: { onRestart: () => void }) {
       offLayers.forEach((off) => off());
       audioManager.stopAlarm();
       audioManager.setIntensity(0);
+      audioManager.setScanMode(false);
       audioManager.stopMusic(600);
       uiAudio.start(); // bring the menu soundtrack back for the outcome screens and the Archive
       simRef.current = null;
