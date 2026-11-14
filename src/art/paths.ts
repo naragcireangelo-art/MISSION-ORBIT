@@ -1,16 +1,16 @@
 /**
- * paths.ts — SVG path data for every satellite part. Pure data, no drawing code.
+ * paths.ts — Shared art types, the palette, each body's mount points, and the asteroid outlines.
  *
- * All coordinates are in "satellite units" with the satellite's centre at (0, 0) and its nose
- * pointing right (+x), the way it flies in Explore. One unit is one CSS pixel at scale 1, so a
- * Surveyor body is about 80 x 44 px.
+ * The satellite part art itself is in faceted-paths.ts, in the same format. All coordinates are in
+ * "satellite units" with the satellite's centre at (0, 0) and its nose pointing right (+x), the way it
+ * flies in Explore. One unit is one CSS pixel at scale 1, so a Surveyor body is about 80 x 44 px.
  *
  * Each part is drawn relative to a mount point on the body (see BODY_ANCHORS):
  *   thruster  at the rear, pointing left     antenna  on top, pointing up
  *   laser     under the nose, pointing right
  *
- * Colours: use a `PALETTE` value, or one of the tokens below that the drawer swaps for the part's
- * own colour: `'$beam'` (the laser's beamColor) and `'$trail'` (the thruster's trailColor).
+ * Colours: use a literal colour, or one of the tokens below that the drawer swaps for the part's own
+ * colour: `'$beam'` (the laser's beamColor) and `'$trail'` (the thruster's trailColor).
  */
 
 export const PALETTE = {
@@ -73,46 +73,9 @@ export interface LaserArt {
   tip: Anchor;
 }
 
-const H = PALETTE.hull;
-const HS = PALETTE.hullShade;
-const D = PALETTE.dark;
+// ── Mount points ─────────────────────────────────────────────────────────────
 
-// ── Bodies ───────────────────────────────────────────────────────────────────
-
-export const BODY_ART: Record<string, readonly ShapeDef[]> = {
-  'body-scout': [
-    // solar wings (behind the chassis)
-    { d: 'M-20 -18 L-8 -18 L-2 -46 L-26 -46 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-20 18 L-8 18 L-2 46 L-26 46 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-23 -32 L-5 -32 M-24.5 -39 L-3.5 -39 M-23 32 L-5 32 M-24.5 39 L-3.5 39', stroke: PALETTE.panelLine, sw: 0.7, opacity: 0.7 },
-    // chassis
-    { d: 'M-34 -12 Q-34 -18 -28 -18 L22 -18 L34 -6 L34 6 L22 18 L-28 18 Q-34 18 -34 12 Z', fill: H, stroke: D, sw: 1.5 },
-    { d: 'M-30 -3 L32 -3 L32 3 L-30 3 Z', fill: PALETTE.gold, opacity: 0.85 },
-    { d: 'M4 -13 H18 a2 2 0 0 1 2 2 V-6 H2 V-11 a2 2 0 0 1 2 -2 Z', fill: PALETTE.accent, opacity: 0.8 },
-    { d: 'M-34 6 H20', stroke: HS, sw: 0.8 },
-  ],
-  'body-surveyor': [
-    { d: 'M-26 -22 L-8 -22 L0 -58 L-34 -58 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-26 22 L-8 22 L0 58 L-34 58 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-30 -34 L-4 -34 M-32 -46 L-2 -46 M-30 34 L-4 34 M-32 46 L-2 46', stroke: PALETTE.panelLine, sw: 0.7, opacity: 0.7 },
-    { d: 'M-40 -14 L-34 -22 L24 -22 L40 -8 L40 8 L24 22 L-34 22 L-40 14 Z', fill: H, stroke: D, sw: 1.5 },
-    { d: 'M-38 -4 L38 -4 L38 4 L-38 4 Z', fill: PALETTE.gold, opacity: 0.85 },
-    { d: 'M2 -17 H12 a2 2 0 0 1 2 2 V-8 H0 V-15 a2 2 0 0 1 2 -2 Z M18 -17 H26 L31 -11 V-8 H18 Z', fill: PALETTE.accent, opacity: 0.8 },
-    { d: 'M-30 -12 H18 M-30 12 H18', stroke: HS, sw: 0.8 },
-    { d: 'M-34 -22 V22', stroke: HS, sw: 0.8 },
-  ],
-  'body-bulwark': [
-    { d: 'M-34 -31 L-14 -31 L-10 -52 L-38 -52 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-34 31 L-14 31 L-10 52 L-38 52 Z', fill: PALETTE.panel, stroke: PALETTE.panelLine, sw: 1 },
-    { d: 'M-36 -41 L-12 -41 M-36 41 L-12 41', stroke: PALETTE.panelLine, sw: 0.7, opacity: 0.7 },
-    { d: 'M-46 -16 L-38 -26 L28 -26 L44 -10 L44 10 L28 26 L-38 26 L-46 16 Z', fill: H, stroke: D, sw: 1.5 },
-    { d: 'M-30 -26 L20 -26 L26 -31 L-24 -31 Z M-30 26 L20 26 L26 31 L-24 31 Z', fill: HS, stroke: D, sw: 1 },
-    { d: 'M-44 -4 L42 -4 L42 4 L-44 4 Z', fill: PALETTE.gold, opacity: 0.85 },
-    { d: 'M4 -20 H18 L24 -14 V-8 H4 Z', fill: PALETTE.accent, opacity: 0.8 },
-    { d: 'M-36 -14 H10 M-36 14 H10 M-24 -26 V26', stroke: HS, sw: 0.9 },
-  ],
-};
-
+/** Where the other parts attach to each body, and the chassis size used for the hitbox. */
 export const BODY_ANCHORS: Record<string, BodyAnchors> = {
   'body-scout': {
     rear: { x: -34, y: 0 }, antenna: { x: 14, y: -18 }, laser: { x: 14, y: 18 }, halfW: 34, halfH: 18,
@@ -122,97 +85,6 @@ export const BODY_ANCHORS: Record<string, BodyAnchors> = {
   },
   'body-bulwark': {
     rear: { x: -46, y: 0 }, antenna: { x: 12, y: -31 }, laser: { x: 14, y: 31 }, halfW: 46, halfH: 31,
-  },
-};
-
-// ── Antennas (origin = mount point, pointing up) ─────────────────────────────
-
-export const ANTENNA_ART: Record<string, readonly ShapeDef[]> = {
-  'antenna-dish-s': [
-    { d: 'M-1.5 0 H1.5 V-14 H-1.5 Z', fill: HS },
-    { d: 'M-12 -22 Q0 -10 12 -22 Q0 -18 -12 -22 Z', fill: H, stroke: D, sw: 1 },
-    { d: 'M0 -17 L0 -29', stroke: PALETTE.accent, sw: 1.2 },
-    { d: 'M-2 -29 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0', fill: PALETTE.accent },
-  ],
-  'antenna-dish-m': [
-    { d: 'M-2 0 H2 V-18 H-2 Z', fill: HS },
-    { d: 'M-17 -28 Q0 -12 17 -28 Q0 -22 -17 -28 Z', fill: H, stroke: D, sw: 1.2 },
-    { d: 'M-17 -28 Q0 -22 17 -28', stroke: HS, sw: 1 },
-    { d: 'M0 -21 L0 -37', stroke: PALETTE.accent, sw: 1.4 },
-    { d: 'M-2.5 -37 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0', fill: PALETTE.accent },
-  ],
-  'antenna-phased-array': [
-    { d: 'M-2 0 H2 V-12 H-2 Z', fill: HS },
-    { d: 'M-18 -28 L18 -28 L18 -12 L-18 -12 Z', fill: D, stroke: H, sw: 1.2 },
-    { d: 'M-12 -28 V-12 M-6 -28 V-12 M0 -28 V-12 M6 -28 V-12 M12 -28 V-12 M-18 -20 H18', stroke: PALETTE.accent, sw: 0.7, opacity: 0.7 },
-    { d: 'M-15 -25 h2 v2 h-2z M-3 -25 h2 v2 h-2z M9 -25 h2 v2 h-2z M-9 -17 h2 v2 h-2z M3 -17 h2 v2 h-2z M15 -17 h2 v2 h-2z', fill: PALETTE.accent },
-  ],
-};
-
-// ── Lasers (origin = mount point under the nose) ─────────────────────────────
-
-export const LASER_ART: Record<string, LaserArt> = {
-  'laser-lidar-1': {
-    shapes: [
-      { d: 'M-5 0 H5 V8 H-5 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M5 3 H15 V7 H5 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M15 3.2 H16.5 V6.8 H15 Z', fill: '$beam' },
-    ],
-    tip: { x: 16.5, y: 5 },
-  },
-  'laser-lidar-2': {
-    shapes: [
-      { d: 'M-6 0 H6 V7 H-6 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M-5 7 a5 5 0 0 0 10 0 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M5 5 H18 V9 H5 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M18 5.2 H19.5 V8.8 H18 Z', fill: '$beam' },
-      { d: 'M-1 7 a1 1 0 1 0 2 0 a1 1 0 1 0 -2 0', fill: '$beam' },
-    ],
-    tip: { x: 19.5, y: 7 },
-  },
-  'laser-lidar-3': {
-    shapes: [
-      { d: 'M-7 0 H7 V8 H-7 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M-6 8 a6 6 0 0 0 12 0 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M6 3 H20 V7 H6 Z M6 9 H20 V13 H6 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M20 3.2 H21.5 V6.8 H20 Z M20 9.2 H21.5 V12.8 H20 Z', fill: '$beam' },
-      { d: 'M-4 8 H4', stroke: '$beam', sw: 1.2 },
-    ],
-    tip: { x: 21.5, y: 8 },
-  },
-};
-
-// ── Thrusters (origin = rear mount, pointing left) ───────────────────────────
-
-export const THRUSTER_ART: Record<string, ThrusterArt> = {
-  'thruster-cold-gas': {
-    shapes: [
-      { d: 'M0 -6 L-8 -8 L-8 8 L0 6 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M-8 -4 L-14 -6 L-14 6 L-8 4 Z', fill: H, stroke: D, sw: 1 },
-      { d: 'M-4 -7 V7', stroke: D, sw: 0.8 },
-    ],
-    flames: [{ x: -14, y: 0, w: 9, len: 16 }],
-  },
-  'thruster-ion': {
-    shapes: [
-      { d: 'M0 -8 H-8 V8 H0 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M-8 -8 L-20 -12 L-20 12 L-8 8 Z', fill: H, stroke: D, sw: 1.2 },
-      { d: 'M-20 -12 V12', stroke: '$trail', sw: 1.6 },
-      { d: 'M-4 -8 V8', stroke: D, sw: 0.8 },
-    ],
-    flames: [{ x: -20, y: 0, w: 15, len: 28 }],
-  },
-  'thruster-plasma': {
-    shapes: [
-      { d: 'M0 -16 H-6 V16 H0 Z', fill: HS, stroke: D, sw: 1 },
-      { d: 'M-6 -16 L-18 -19 L-18 -5 L-6 -8 Z', fill: H, stroke: D, sw: 1.2 },
-      { d: 'M-6 16 L-18 19 L-18 5 L-6 8 Z', fill: H, stroke: D, sw: 1.2 },
-      { d: 'M-18 -19 V-5 M-18 5 V19', stroke: '$trail', sw: 1.6 },
-    ],
-    flames: [
-      { x: -18, y: -12, w: 11, len: 30 },
-      { x: -18, y: 12, w: 11, len: 30 },
-    ],
   },
 };
 

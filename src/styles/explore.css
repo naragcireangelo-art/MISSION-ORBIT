@@ -2,6 +2,8 @@
 
 .mo-explore { padding: 0; gap: 0; overflow: hidden; }
 .mo-explore__stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #02050d; }
+/* Everything the screen shake moves: stars, planet and the game canvas. The HUD is a sibling, not inside. */
+.mo-explore__world { position: absolute; inset: 0; }
 .mo-explore__back,
 .mo-explore__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .mo-explore__back { z-index: 0; }
