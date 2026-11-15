@@ -46,8 +46,9 @@
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
-  min-height: 0;
-  flex: 1;
+  /* Never shrink below the target panel: on short windows the screen scrolls instead of the
+     panels spilling over the buttons. */
+  flex: 1 0 auto;
 }
 .mo-brief__target { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 6px; }
 .mo-brief__tag { margin: 0; font-family: var(--mo-font-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mo-amber); }
@@ -57,9 +58,10 @@
 .mo-brief__facts div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border: 1px solid var(--mo-line); border-radius: 4px; background: var(--mo-panel); }
 .mo-brief__facts dt { font-family: var(--mo-font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mo-dim); }
 .mo-brief__facts dd { margin: 0; font-family: var(--mo-font-mono); font-size: 12px; color: var(--mo-text); }
-.mo-brief__tx { min-width: 0; min-height: 260px; display: flex; flex-direction: column; }
-.mo-brief__tx > * { flex: 1; min-height: 0; }
-.mo-brief__actions { display: flex; justify-content: space-between; gap: 12px; width: 100%; max-width: 1120px; margin: 0 auto; }
+/* The transmission fills its cell and scrolls inside it, so long text never stretches the grid. */
+.mo-brief__tx { position: relative; min-width: 0; min-height: 260px; }
+.mo-brief__tx > * { position: absolute; inset: 0; }
+.mo-brief__actions { flex-shrink: 0; display: flex; justify-content: space-between; gap: 12px; width: 100%; max-width: 1120px; margin: 0 auto; }
 @media (max-width: 820px) {
   .mo-brief__grid { grid-template-columns: minmax(0, 1fr); }
   .mo-brief__actions { flex-wrap: wrap; }
