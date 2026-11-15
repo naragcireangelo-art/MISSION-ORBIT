@@ -5,6 +5,7 @@ satellite, read the launch-day briefing for a historical mission, then fly it th
 **type the name of each planet or moon to scan it**. Nine missions, from Mariner 10 (1973) to the James Webb
 Space Telescope (2021).
 
+**Play online:** [https://mission-orbit-xi.vercel.app/](https://mission-orbit-xi.vercel.app/)
 Desktop browsers with a physical keyboard only.
 
 ## Run it
